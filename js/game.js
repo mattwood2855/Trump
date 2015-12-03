@@ -2,7 +2,9 @@ var PhaserGame = function (game) {
 
     this.map = null;
     this.layer = null;
+
     this.trump = null;
+    this.steaks = null;
 
     this.safetile = 12;
     this.gridsize = 32;
@@ -23,7 +25,7 @@ var PhaserGame = function (game) {
     this.levels = ['assets/levels/iowa.json',
         'assets/levels/newHampshire.json',
         'assets/levels/southCarolina.json',
-        'assets/levels/nevada.json']
+        'assets/levels/nevada.json'];
     this.currentLevel = 0;
 
 };
@@ -39,6 +41,10 @@ PhaserGame.prototype = {
 
         // Load trump sprite
         this.load.image('trump', 'assets/sprites/trump2.png');
+
+        // Load Steak picture
+        this.load.image('steak', 'assets/pics/steak.png');
+
 
         // Load level tilemap
         this.load.tilemap('Iowa', 'assets/levels/iowa.json', null, Phaser.Tilemap.TILED_JSON);
@@ -58,6 +64,11 @@ PhaserGame.prototype = {
 
         this.trump = this.add.sprite(48, 48, 'trump');
         this.trump.anchor.set(0.5);
+
+        this.steaks = this.add.sprite(80, 48, 'steak');
+        this.steaks.anchor.set(0.5);
+        this.steaks.scale.setTo(0.35,0.35);
+        this.add.tween(this.steaks.scale).to({ x:.5, y:.5 }, 350, Phaser.Easing.Linear.None, true, 0, -1, true);
 
         this.physics.arcade.enable(this.trump);
 
@@ -211,6 +222,8 @@ PhaserGame.prototype = {
         {
             this.turn();
         }
+
+        // make the steaks bounce
 
     },
 
