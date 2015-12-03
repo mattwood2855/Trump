@@ -3,10 +3,8 @@
  */
 winW = document.body.offsetWidth;
 winH = document.body.offsetHeight;
-var game = new Phaser.Game(900,900, Phaser.CANVAS, 'Trump');
+var game = new Phaser.Game(800, 600, Phaser.CANVAS, 'Trump');
 
-
-game.state.add('Menu', Menu);
-
+game.state.add('Menu', Menu, true);
 
 game.state.start('Menu');

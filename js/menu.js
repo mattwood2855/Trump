@@ -2,13 +2,17 @@
  * Created by Matthew on 12/3/2015.
  */
 
-var Menu = {
+var Menu = function(game) {
+
+}
+
+Menu.prototype = {
 
     preload : function() {
         // Loading images is required so that later on we can create sprites based on the them.
         // The first argument is how our image will be refered to,
         // the second one is the path to our file.
-        game.load.image('menu', '/assets/pics/trump.jpg');
+        game.load.image('menu', 'assets/pics/mainMenu.png');
     },
 
     create: function () {
