@@ -101,6 +101,9 @@ Menu.prototype = {
         // Change the state to the actual game.
         game.state.start('Game');
 
-    }
+    },
 
+    visitPage: function() {
+        window.location='http://www.google.com';
+    }
 };
