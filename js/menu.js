@@ -26,7 +26,7 @@ Menu.prototype = {
         this.add.sprite(0, 0, 'menu');
         this.add.button(400, 300, 'play', this.startGame, this);
         this.add.sprite(400, 380, 'inst');
-        this.add.sprite(400, 460, 'donate');
+        this.add.button(400, 460, 'donate', this.visitPage, this);
 
     },
 
@@ -35,6 +35,9 @@ Menu.prototype = {
         // Change the state to the actual game.
         game.state.start('Game');
 
-    }
+    },
 
+    visitPage: function() {
+        window.location='http://www.google.com';
+    }
 };
