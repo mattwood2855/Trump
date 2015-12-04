@@ -55,7 +55,8 @@ Game.prototype = {
     preload: function () {
 
         // Load trump sprite
-        this.load.image('trump', 'assets/sprites/trump2.png');
+        //this.load.image('trump', 'assets/sprites/trump2.png');
+        this.load.spritesheet('trump', 'assets/sprites/trump.png', 64, 64, 2);
 
         // Load Steak and Duck pictures
         this.load.image('steak', 'assets/pics/steak.png');
@@ -93,7 +94,10 @@ Game.prototype = {
 
         this.trump = this.add.sprite(96, 416, 'trump');
         this.trump.anchor.set(0.5);
-        this.trump.scale.set(2);
+        this.trump.animations.add('down');
+        this.trump.animations.play('down', 4, true);
+
+
 
         this.physics.arcade.enable(this.trump);
 
