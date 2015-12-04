@@ -7,12 +7,16 @@ var PhaserGame = function (game) {
     this.points = 0;
     this.trump = null;
 
+    this.winText = '';
+
     this.steaks = [];
     this.steakTileIndex = 36;
     this.powerups = [];
     this.powerupTileIndex = 37;
 
+    this.eatSteakSound = null;
     this.powerupSounds = [];
+    this.powerupSoundPlaying = false;
 
     this.safetiles = [12,36,37];
     this.gridsize = 64;
@@ -60,7 +64,7 @@ PhaserGame.prototype = {
         this.load.image('tiles', 'assets/tilesets/iowaTiles.png');
 
         // Load Sound effects
-
+        this.load.audio('eatSteak', 'assets/sounds/eatSteak.mp3');
         this.load.audio('powerup0', 'assets/sounds/powerup0.mp3');
         this.load.audio('powerup1', 'assets/sounds/powerup1.mp3');
         this.load.audio('powerup2', 'assets/sounds/powerup2.mp3');
@@ -90,22 +94,6 @@ PhaserGame.prototype = {
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // Create Audio
-        this.powerupSounds.push(this.add.audio('powerup0'));
-        this.powerupSounds.push(this.add.audio('powerup1'));
-        this.powerupSounds.push(this.add.audio('powerup2'));
-        this.powerupSounds.push(this.add.audio('powerup3'));
-
-        //  Being mp3 files these take time to decode, so we can't play them instantly
-        //  Using setDecodedCallback we can be notified when they're ALL ready for use.
-        //  The audio files could decode in ANY order, we can never be sure which it'll be.
-
-        game.sound.setDecodedCallback(this.powerupSounds, this.start, this);
-
-    },
-
-    start: function(){
-
         // Create all the pickups
         // Loop through all tiles in the map
         for(var y = 0; y < this.map.height; ++y){
@@ -126,7 +114,7 @@ PhaserGame.prototype = {
                 // If this is a powerup tile
                 if(tile.index == this.powerupTileIndex)
                 {
-                    // Create a new steak object at the center of this tile
+                    // Create a new powerup object at the center of this tile
                     var newPowerup = this.add.sprite((tile.x * this.gridsize) + this.gridsize/2, tile.y * this.gridsize + this.gridsize/2, 'duck');
                     newPowerup.anchor.set(0.5);
                     newPowerup.scale.setTo(0.5,0.5);
@@ -137,6 +125,28 @@ PhaserGame.prototype = {
                 }
             }
         }
+
+        // Create Audio
+        this.eatSteakSound = this.add.audio('eatSteak');
+        this.powerupSounds.push(this.add.audio('powerup0'));
+        this.powerupSounds.push(this.add.audio('powerup1'));
+        this.powerupSounds.push(this.add.audio('powerup2'));
+        this.powerupSounds.push(this.add.audio('powerup3'));
+
+        //  Being mp3 files these take time to decode, so we can't play them instantly
+        //  Using setDecodedCallback we can be notified when they're ALL ready for use.
+        //  The audio files could decode in ANY order, we can never be sure which it'll be.
+
+        game.sound.setDecodedCallback(this.powerupSounds, this.start, this);
+
+    },
+
+    start: function(){
+
+        for(var x = 0; x < this.powerupSounds.length; x++){
+            this.powerupSounds[x].onStop.add(this.powerupSoundStopped, this);
+        }
+
 
 
 
@@ -273,6 +283,11 @@ PhaserGame.prototype = {
 
     update: function () {
 
+        if(this.steaks.length == 0){
+            var style = { font: "32px Arial", fill: "#ff0044", align: "center" };
+                this.winText = this.add.text(0,0, "You've escaped the truth this time...")
+        }
+
         this.physics.arcade.collide(this.trump, this.layer);
 
         this.marker.x = this.math.snapToFloor(Math.floor(this.trump.x), this.gridsize) / this.gridsize;
@@ -297,6 +312,9 @@ PhaserGame.prototype = {
             // If there is a collision with trump
             var steakToEat = this.steaks[x];
             if(Phaser.Rectangle.intersects(this.trump, steakToEat)){
+                if(!this.powerupSoundPlaying) {
+                    this.eatSteakSound.play();
+                }
                 // Give the player a point
                 this.points++;
                 // Remove the steak from the array
@@ -305,8 +323,24 @@ PhaserGame.prototype = {
                 steakToEat.destroy();
             }
         }
+        // Go through powerups
+        for(var x = 0; x < this.powerups.length; x++) {
+            // If there is a collision with trump
+            var powerupToEat = this.powerups[x];
+            if(Phaser.Rectangle.intersects(this.trump, powerupToEat)){
+                this.powerupSounds[Math.floor((Math.random() * 4))].play();
+                this.powerupSoundPlaying = true;
+                // Remove the steak from the array
+                this.powerups.splice(x, 1);
+                // destroy the steak for garbage collection
+                powerupToEat.destroy();
+            }
+        }
 
+    },
 
+    powerupSoundStopped: function(){
+        this.powerupSoundPlaying = false;
     },
 
     render: function () {
