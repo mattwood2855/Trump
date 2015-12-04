@@ -111,8 +111,7 @@ Game.prototype = {
                     var newSteak = this.add.sprite((tile.x * this.gridsize) + this.gridsize/2, tile.y * this.gridsize + this.gridsize/2, 'steak');
                     newSteak.anchor.set(0.5);
                     newSteak.scale.setTo(0.5,0.5);
-                    // Add a zoom tween that last forever
-                    //this.add.tween(newSteak.scale).to({ x:.5, y:.5 }, 400, Phaser.Easing.Linear.None, true, 0, -1, true);
+
                     // Add the steak to the array of steaks.
                     this.steaks.push(newSteak);
                 }
@@ -123,8 +122,10 @@ Game.prototype = {
                     var newPowerup = this.add.sprite((tile.x * this.gridsize) + this.gridsize/2, tile.y * this.gridsize + this.gridsize/2, 'duck');
                     newPowerup.anchor.set(0.5);
                     newPowerup.scale.setTo(0.5,0.5);
+
                     // Add a zoom tween that last forever
                     this.add.tween(newPowerup.scale).to({ x:.75, y:.75 }, 350, Phaser.Easing.Linear.None, true, 0, -1, true);
+
                     // Add the steak to the array of steaks.
                     this.powerups.push(newPowerup);
                 }
