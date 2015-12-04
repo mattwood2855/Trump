@@ -102,6 +102,7 @@ Menu.prototype = {
             }
             if (this.selectKey.isDown) {
                 if(this.currentSelection == 0){
+                    this.backgroundSound.stop();
                     game.state.start('Game');
                 }
             }
@@ -110,13 +111,6 @@ Menu.prototype = {
 
     movingSelectorsStopped: function(){
         this.movingSelectors = false;
-    },
-
-    startGame: function () {
-
-        // Change the state to the actual game.
-        game.state.start('Game');
-
     },
 
     visitPage: function() {
