@@ -206,11 +206,17 @@ Game.prototype = {
 
     checkDirection: function (turnTo) {
 
-        if (this.turning === turnTo || this.directions[turnTo] === null || !this.anyMatches(this.directions[turnTo].index, this.safetiles))
+        if (this.turning === turnTo || this.directions[turnTo] === null )
         {
             //  Invalid direction if they're already set to turn that way
             //  Or there is no tile there, or the tile isn't index a floor tile
             return;
+        }
+
+        if(this.directions[turnTo]){
+            if(!this.anyMatches(this.directions[turnTo].index, this.safetiles)){
+                return;
+            }
         }
 
         //  Check if they want to turn around and can
@@ -297,7 +303,10 @@ Game.prototype = {
     },
 
     update: function () {
+
         if(!this.loadingNextLevel) {
+
+            // Check if the player ate all the steaks (WIN)
             if (this.steaks.length == 0) {
                 this.loadingNextLevel = true;
                 this.iRunSound.play();
@@ -310,20 +319,37 @@ Game.prototype = {
                 loadTween.onComplete.add(this.loadNextLevel, this);
             }
 
-
+            // Perform collisions between player and level
             this.physics.arcade.collide(this.trump, this.layer);
 
+            // Wrap the player if they walk off the edge
+            if(this.trump.x < -this.gridsize){
+                this.trump.x = game.width + this.gridsize/2;
+            }
+            if(this.trump.x > game.width + this.gridsize/2){
+                this.trump.x = -this.gridsize;
+            }
+            if(this.trump.y < -this.gridsize){
+                this.trump.y = game.height + this.gridsize/2;
+            }
+            if(this.trump.y > game.height + this.gridsize/2){
+                this.trump.y = -this.gridsize;
+            }
+
+            // Create a marker where the player is (for determining ability to turn)
             this.marker.x = this.math.snapToFloor(Math.floor(this.trump.x), this.gridsize) / this.gridsize;
             this.marker.y = this.math.snapToFloor(Math.floor(this.trump.y), this.gridsize) / this.gridsize;
 
-            //  Update our grid sensors
+            //  Update our grid sensors - places the tile index in the array
             this.directions[1] = this.map.getTileLeft(this.layer.index, this.marker.x, this.marker.y);
             this.directions[2] = this.map.getTileRight(this.layer.index, this.marker.x, this.marker.y);
             this.directions[3] = this.map.getTileAbove(this.layer.index, this.marker.x, this.marker.y);
             this.directions[4] = this.map.getTileBelow(this.layer.index, this.marker.x, this.marker.y);
 
+            // Update based on input
             this.checkKeys();
 
+            // If turning, then turn the player
             if (this.turning !== Phaser.NONE) {
                 this.turn();
             }
