@@ -46,6 +46,7 @@ Menu.prototype = {
 
         // Load the background sound clip
         this.load.audio('trumpSaysChina', 'assets/sounds/trumpSaysChina.mp3');
+        this.load.audio('plop', 'assets/sounds/140705__dreeke__champaign-cork.mp3');
     },
 
 
@@ -76,6 +77,11 @@ Menu.prototype = {
         this.backgroundSound = this.add.audio('trumpSaysChina');
 
         game.sound.setDecodedCallback(this.backgroundSound, this.start, this);
+
+        // add select sound
+        this.clickSound = this.add.audio('plop');
+
+        game.sound.setDecodedCallback(this.clickSound, this.start, this);
     },
 
     start: function(){
@@ -90,6 +96,7 @@ Menu.prototype = {
                     this.movingSelectors = true;
                     this.add.tween(this.selectorSteaks[0]).to({y:(this.selectorSteaks[0].y-80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false);
                     this.add.tween(this.selectorSteaks[1]).to({y:(this.selectorSteaks[0].y-80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false).onComplete.add(this.movingSelectorsStopped, this);
+                    this.clickSound.play();
                 }
             }
             if (this.downKey.isDown) {
@@ -98,6 +105,7 @@ Menu.prototype = {
                     this.movingSelectors = true;
                     this.add.tween(this.selectorSteaks[0]).to({y:(this.selectorSteaks[0].y+80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false);
                     this.add.tween(this.selectorSteaks[1]).to({y:(this.selectorSteaks[0].y+80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false).onComplete.add(this.movingSelectorsStopped, this);
+                    this.clickSound.play();
                 }
             }
             if (this.selectKey.isDown) {
@@ -105,6 +113,14 @@ Menu.prototype = {
                     this.backgroundSound.stop();
                     game.state.start('Game');
                 }
+               //else if(this.currentSelection == 1){
+                //    this.backgroundSound.stop();
+                //
+                //}
+                //else (this.currentSelection == 2){
+                //    this.backgroundSound.stop();
+                //    this.visitPage();
+                //}
             }
         }
     },
