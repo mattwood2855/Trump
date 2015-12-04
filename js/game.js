@@ -17,6 +17,7 @@ var PhaserGame = function (game) {
     this.eatSteakSound = null;
     this.powerupSounds = [];
     this.powerupSoundPlaying = false;
+    this.iRunSound = null;
 
     this.safetiles = [12,36,37];
     this.gridsize = 64;
@@ -39,7 +40,7 @@ var PhaserGame = function (game) {
         'assets/levels/southCarolina.json',
         'assets/levels/nevada.json'];
     this.currentLevel = 0;
-
+    this.loadingNextLevel = false;
 };
 
 PhaserGame.prototype = {
@@ -63,12 +64,16 @@ PhaserGame.prototype = {
         // Load tile sheet
         this.load.image('tiles', 'assets/tilesets/iowaTiles.png');
 
+        // Load black for tweening between game states
+        this.load.image('blackScreen', 'assets/pics/black.png');
+
         // Load Sound effects
         this.load.audio('eatSteak', 'assets/sounds/eatSteak.mp3');
         this.load.audio('powerup0', 'assets/sounds/powerup0.mp3');
         this.load.audio('powerup1', 'assets/sounds/powerup1.mp3');
         this.load.audio('powerup2', 'assets/sounds/powerup2.mp3');
         this.load.audio('powerup3', 'assets/sounds/powerup3.mp3');
+        this.load.audio('iRun', 'assets/sounds/iRun.mp3');
 
     },
 
@@ -132,6 +137,7 @@ PhaserGame.prototype = {
         this.powerupSounds.push(this.add.audio('powerup1'));
         this.powerupSounds.push(this.add.audio('powerup2'));
         this.powerupSounds.push(this.add.audio('powerup3'));
+        this.iRunSound = this.add.audio('iRun');
 
         //  Being mp3 files these take time to decode, so we can't play them instantly
         //  Using setDecodedCallback we can be notified when they're ALL ready for use.
@@ -146,10 +152,6 @@ PhaserGame.prototype = {
         for(var x = 0; x < this.powerupSounds.length; x++){
             this.powerupSounds[x].onStop.add(this.powerupSoundStopped, this);
         }
-
-
-
-
 
         this.move(Phaser.DOWN);
 
@@ -282,61 +284,67 @@ PhaserGame.prototype = {
     },
 
     update: function () {
+        if(!this.loadingNextLevel) {
+            if (this.steaks.length == 0) {
+                this.loadingNextLevel = true;
+                this.iRunSound.play();
+                var blackScreen = this.add.sprite(game.width / 2, game.height / 2, 'blackScreen');
+                blackScreen.anchor.set(0.5);
+                blackScreen.scale.setTo(1000, 1000);
+                blackScreen.alpha = 0.0;
 
-        if(this.steaks.length == 0){
-            var style = { font: "32px Arial", fill: "#ff0044", align: "center" };
-                this.winText = this.add.text(0,0, "You've escaped the truth this time...")
-        }
+                var loadTween = this.add.tween(blackScreen).to({alpha: 1}, 1000, Phaser.Easing.Linear.None, true, 0, 0, false);
+                loadTween.onComplete.add(this.loadNextLevel, this);
+            }
 
-        this.physics.arcade.collide(this.trump, this.layer);
+            this.physics.arcade.collide(this.trump, this.layer);
 
-        this.marker.x = this.math.snapToFloor(Math.floor(this.trump.x), this.gridsize) / this.gridsize;
-        this.marker.y = this.math.snapToFloor(Math.floor(this.trump.y), this.gridsize) / this.gridsize;
+            this.marker.x = this.math.snapToFloor(Math.floor(this.trump.x), this.gridsize) / this.gridsize;
+            this.marker.y = this.math.snapToFloor(Math.floor(this.trump.y), this.gridsize) / this.gridsize;
 
-        //  Update our grid sensors
-        this.directions[1] = this.map.getTileLeft(this.layer.index, this.marker.x, this.marker.y);
-        this.directions[2] = this.map.getTileRight(this.layer.index, this.marker.x, this.marker.y);
-        this.directions[3] = this.map.getTileAbove(this.layer.index, this.marker.x, this.marker.y);
-        this.directions[4] = this.map.getTileBelow(this.layer.index, this.marker.x, this.marker.y);
+            //  Update our grid sensors
+            this.directions[1] = this.map.getTileLeft(this.layer.index, this.marker.x, this.marker.y);
+            this.directions[2] = this.map.getTileRight(this.layer.index, this.marker.x, this.marker.y);
+            this.directions[3] = this.map.getTileAbove(this.layer.index, this.marker.x, this.marker.y);
+            this.directions[4] = this.map.getTileBelow(this.layer.index, this.marker.x, this.marker.y);
 
-        this.checkKeys();
+            this.checkKeys();
 
-        if (this.turning !== Phaser.NONE)
-        {
-            this.turn();
-        }
+            if (this.turning !== Phaser.NONE) {
+                this.turn();
+            }
 
-        // Eat steaks
-        // Go through each steak
-        for(var x = 0; x < this.steaks.length; x++) {
-            // If there is a collision with trump
-            var steakToEat = this.steaks[x];
-            if(Phaser.Rectangle.intersects(this.trump, steakToEat)){
-                if(!this.powerupSoundPlaying) {
-                    this.eatSteakSound.play();
+            // Eat steaks
+            // Go through each steak
+            for (var x = 0; x < this.steaks.length; x++) {
+                // If there is a collision with trump
+                var steakToEat = this.steaks[x];
+                if (Phaser.Rectangle.intersects(this.trump, steakToEat)) {
+                    if (!this.powerupSoundPlaying) {
+                        this.eatSteakSound.play();
+                    }
+                    // Give the player a point
+                    this.points++;
+                    // Remove the steak from the array
+                    this.steaks.splice(x, 1);
+                    // destroy the steak for garbage collection
+                    steakToEat.destroy();
                 }
-                // Give the player a point
-                this.points++;
-                // Remove the steak from the array
-                this.steaks.splice(x, 1);
-                // destroy the steak for garbage collection
-                steakToEat.destroy();
+            }
+            // Go through powerups
+            for (var x = 0; x < this.powerups.length; x++) {
+                // If there is a collision with trump
+                var powerupToEat = this.powerups[x];
+                if (Phaser.Rectangle.intersects(this.trump, powerupToEat)) {
+                    this.powerupSounds[Math.floor((Math.random() * 4))].play();
+                    this.powerupSoundPlaying = true;
+                    // Remove the steak from the array
+                    this.powerups.splice(x, 1);
+                    // destroy the steak for garbage collection
+                    powerupToEat.destroy();
+                }
             }
         }
-        // Go through powerups
-        for(var x = 0; x < this.powerups.length; x++) {
-            // If there is a collision with trump
-            var powerupToEat = this.powerups[x];
-            if(Phaser.Rectangle.intersects(this.trump, powerupToEat)){
-                this.powerupSounds[Math.floor((Math.random() * 4))].play();
-                this.powerupSoundPlaying = true;
-                // Remove the steak from the array
-                this.powerups.splice(x, 1);
-                // destroy the steak for garbage collection
-                powerupToEat.destroy();
-            }
-        }
-
     },
 
     powerupSoundStopped: function(){
@@ -371,8 +379,11 @@ PhaserGame.prototype = {
 
          this.game.debug.geom(this.turnPoint, '#ffff00');*/
 
-    }
+    },
 
+    loadNextLevel: function(){
+        game.state.start('LoadNextLevel');
+    }
 };
 
 //game.state.add('Game', PhaserGame, true);
