@@ -43,6 +43,7 @@ Menu.prototype = {
         this.load.image('donate', 'assets/pics/donate.png');
         this.load.image('steak', 'assets/pics/steak.png');
         this.load.image('blackScreen', 'assets/pics/black.png');
+        this.load.image('instructionsMenu', 'assets/instructionsMenu.png');
 
         // Load the background sound clip
         this.load.audio('trumpSaysChina', 'assets/sounds/trumpSaysChina.mp3');
@@ -117,6 +118,9 @@ Menu.prototype = {
             if (this.selectKey.isDown) {
                 if(this.currentSelection == 1){
                     this.backgroundSound.stop();
+                    this.background = this.add.sprite(0, 0, 'instructionsMenu');
+                    this.background.width = game.width;
+                    this.background.height = game.height;
                 }
             }
             if (this.selectKey.isDown) {
