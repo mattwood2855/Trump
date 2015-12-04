@@ -113,14 +113,17 @@ Menu.prototype = {
                     this.backgroundSound.stop();
                     game.state.start('Game');
                 }
-               //else if(this.currentSelection == 1){
-                //    this.backgroundSound.stop();
-                //
-                //}
-                //else (this.currentSelection == 2){
-                //    this.backgroundSound.stop();
-                //    this.visitPage();
-                //}
+            }
+            if (this.selectKey.isDown) {
+                if(this.currentSelection == 1){
+                    this.backgroundSound.stop();
+                }
+            }
+            if (this.selectKey.isDown) {
+                if(this.currentSelection == 2){
+                    this.backgroundSound.stop();
+                    this.visitPage();
+                }
             }
         }
     },
