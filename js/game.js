@@ -56,7 +56,7 @@ Game.prototype = {
 
         // Load trump sprite
         //this.load.image('trump', 'assets/sprites/trump2.png');
-        this.load.spritesheet('trump', 'assets/sprites/trump.png', 64, 64, 2);
+        this.load.spritesheet('trump', 'assets/sprites/trump.png', 64, 64, 4);
 
         // Load Steak and Duck pictures
         this.load.image('steak', 'assets/pics/steak.png');
@@ -94,7 +94,8 @@ Game.prototype = {
 
         this.trump = this.add.sprite(96, 416, 'trump');
         this.trump.anchor.set(0.5);
-        this.trump.animations.add('down');
+        this.trump.animations.add('down', [0,1]);
+        this.trump.animations.add('right', [2,3]);
         this.trump.animations.play('down', 4, true);
 
 
@@ -231,6 +232,20 @@ Game.prototype = {
         else
         {
             this.turning = turnTo;
+            if(turnTo == 1) {
+                this.trump.animations.play('right', 4, true);
+                this.trump.scale.x = Math.abs(this.trump.scale.x) * -1;
+            }
+            if(turnTo == 2) {
+                this.trump.animations.play('right', 4, true);
+                this.trump.scale.x = Math.abs(this.trump.scale.x);
+            }
+            if(turnTo == 3) {
+                this.trump.animations.play('down', 4, true);
+            }
+            if(turnTo == 4) {
+                this.trump.animations.play('down', 4, true);
+            }
 
             this.turnPoint.x = (this.marker.x * this.gridsize) + (this.gridsize / 2);
             this.turnPoint.y = (this.marker.y * this.gridsize) + (this.gridsize / 2);
@@ -280,7 +295,7 @@ Game.prototype = {
             this.trump.body.velocity.y = speed;
         }
 
-        this.add.tween(this.trump).to( { angle: this.getAngle(direction) }, this.turnSpeed, "Linear", true);
+        //this.add.tween(this.trump).to( { angle: this.getAngle(direction) }, this.turnSpeed, "Linear", true);
 
         this.current = direction;
 
