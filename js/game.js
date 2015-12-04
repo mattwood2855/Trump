@@ -3,11 +3,19 @@ var PhaserGame = function (game) {
     this.map = null;
     this.layer = null;
 
+    this.lives = 3;
+    this.points = 0;
     this.trump = null;
-    this.steaks = null;
 
-    this.safetile = 12;
-    this.gridsize = 32;
+    this.steaks = [];
+    this.steakTileIndex = 36;
+    this.powerups = [];
+    this.powerupTileIndex = 37;
+
+    this.powerupSounds = [];
+
+    this.safetiles = [12,36,37];
+    this.gridsize = 64;
 
     this.speed = 150;
     this.threshold = 3;
@@ -44,40 +52,96 @@ PhaserGame.prototype = {
 
         // Load Steak picture
         this.load.image('steak', 'assets/pics/steak.png');
-
+        this.load.image('duck', 'assets/pics/duck.png');
 
         // Load level tilemap
-        this.load.tilemap('Iowa', 'assets/levels/iowa.json', null, Phaser.Tilemap.TILED_JSON);
+        this.load.tilemap('iowa', 'assets/levels/iowa.json', null, Phaser.Tilemap.TILED_JSON);
         // Load tile sheet
-        this.load.image('tiles', 'assets/tilesets/tiles.png');
+        this.load.image('tiles', 'assets/tilesets/iowaTiles.png');
+
+        // Load Sound effects
+
+        this.load.audio('powerup0', 'assets/sounds/powerup0.mp3');
+        this.load.audio('powerup1', 'assets/sounds/powerup1.mp3');
+        this.load.audio('powerup2', 'assets/sounds/powerup2.mp3');
+        this.load.audio('powerup3', 'assets/sounds/powerup3.mp3');
+
     },
 
     create: function () {
+        game.stage.backgroundColor = '#414040';
 
+        var style = { font: "65px Arial", fill: "#52bace", align: "center" };
+        text = game.add.text(game.world.centerX, 100, "decoding", style);
+        text.anchor.set(0.5);
 
-        this.map = game.add.tilemap('Iowa');
-        this.map.addTilesetImage('Iowa', 'tiles');
+        this.map = game.add.tilemap('iowa');
+        this.map.addTilesetImage('IowaTiles', 'tiles');
 
-        this.layer = this.map.createLayer('Level1');
+        this.layer = this.map.createLayer('Iowa');
 
-        this.map.setCollisionByExclusion([12], true, this.layer);
+        this.map.setCollisionByExclusion([12,36,37], true, this.layer);
 
-        this.trump = this.add.sprite(48, 48, 'trump');
+        this.trump = this.add.sprite(96, 416, 'trump');
         this.trump.anchor.set(0.5);
-
-        this.steaks = this.add.sprite(80, 48, 'steak');
-        this.steaks.anchor.set(0.5);
-        this.steaks.scale.setTo(0.35,0.35);
-        this.add.tween(this.steaks.scale).to({ x:.5, y:.5 }, 350, Phaser.Easing.Linear.None, true, 0, -1, true);
+        this.trump.scale.set(2);
 
         this.physics.arcade.enable(this.trump);
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        this.move(Phaser.DOWN);
+        // Create Audio
+        this.powerupSounds.push(this.add.audio('powerup0'));
+        this.powerupSounds.push(this.add.audio('powerup1'));
+        this.powerupSounds.push(this.add.audio('powerup2'));
+        this.powerupSounds.push(this.add.audio('powerup3'));
 
-        game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
-        game.input.onDown.add(function(){game.scale.startFullScreen(false)}, this);
+        //  Being mp3 files these take time to decode, so we can't play them instantly
+        //  Using setDecodedCallback we can be notified when they're ALL ready for use.
+        //  The audio files could decode in ANY order, we can never be sure which it'll be.
+
+        game.sound.setDecodedCallback(this.powerupSounds, this.start, this);
+
+    },
+
+    start: function(){
+
+        // Create all the pickups
+        // Loop through all tiles in the map
+        for(var y = 0; y < this.map.height; ++y){
+            for(var x = 0; x < this.map.width; ++x){
+                var tile = this.map.getTile(x, y);
+                // If the tile is a steak tile
+                if(tile.index == this.steakTileIndex)
+                {
+                    // Create a new steak object at the center of this tile
+                    var newSteak = this.add.sprite((tile.x * this.gridsize) + this.gridsize/2, tile.y * this.gridsize + this.gridsize/2, 'steak');
+                    newSteak.anchor.set(0.5);
+                    newSteak.scale.setTo(0.35,0.35);
+                    // Add a zoom tween that last forever
+                    //this.add.tween(newSteak.scale).to({ x:.5, y:.5 }, 400, Phaser.Easing.Linear.None, true, 0, -1, true);
+                    // Add the steak to the array of steaks.
+                    this.steaks.push(newSteak);
+                }
+                // If this is a powerup tile
+                if(tile.index == this.powerupTileIndex)
+                {
+                    // Create a new steak object at the center of this tile
+                    var newPowerup = this.add.sprite((tile.x * this.gridsize) + this.gridsize/2, tile.y * this.gridsize + this.gridsize/2, 'duck');
+                    newPowerup.anchor.set(0.5);
+                    newPowerup.scale.setTo(0.5,0.5);
+                    // Add a zoom tween that last forever
+                    this.add.tween(newPowerup.scale).to({ x:.75, y:.75 }, 350, Phaser.Easing.Linear.None, true, 0, -1, true);
+                    // Add the steak to the array of steaks.
+                    this.powerups.push(newPowerup);
+                }
+            }
+        }
+
+
+
+
+        this.move(Phaser.DOWN);
 
     },
 
@@ -85,12 +149,10 @@ PhaserGame.prototype = {
 
         if (this.cursors.left.isDown && this.current !== Phaser.LEFT)
         {
-            console.log("Left Pressed");
             this.checkDirection(Phaser.LEFT);
         }
         else if (this.cursors.right.isDown && this.current !== Phaser.RIGHT)
         {
-            console.log("Right Pressed");
             this.checkDirection(Phaser.RIGHT);
         }
         else if (this.cursors.up.isDown && this.current !== Phaser.UP)
@@ -109,12 +171,18 @@ PhaserGame.prototype = {
 
     },
 
+    anyMatches: function(value, array){
+        for (var i = 0; i < array.length; i++) {
+            if (value == array[i])
+                return true;
+        }
+        return false;
+    },
+
     checkDirection: function (turnTo) {
 
-        if (this.turning === turnTo || this.directions[turnTo] === null || this.directions[turnTo].index !== this.safetile)
+        if (this.turning === turnTo || this.directions[turnTo] === null || !this.anyMatches(this.directions[turnTo].index, this.safetiles))
         {
-            console.log(this.turning + " : " + turnTo);
-            console.log(this.directions[turnTo].index);
             //  Invalid direction if they're already set to turn that way
             //  Or there is no tile there, or the tile isn't index a floor tile
             return;
@@ -223,7 +291,21 @@ PhaserGame.prototype = {
             this.turn();
         }
 
-        // make the steaks bounce
+        // Eat steaks
+        // Go through each steak
+        for(var x = 0; x < this.steaks.length; x++) {
+            // If there is a collision with trump
+            var steakToEat = this.steaks[x];
+            if(Phaser.Rectangle.intersects(this.trump, steakToEat)){
+                // Give the player a point
+                this.points++;
+                // Remove the steak from the array
+                this.steaks.splice(x, 1);
+                // destroy the steak for garbage collection
+                steakToEat.destroy();
+            }
+        }
+
 
     },
 
@@ -231,7 +313,7 @@ PhaserGame.prototype = {
 
         //  Un-comment this to see the debug drawing
 
-        /*for (var t = 1; t < 5; t++)
+/*        for (var t = 1; t < 5; t++)
          {
          if (this.directions[t] === null)
          {
@@ -240,7 +322,7 @@ PhaserGame.prototype = {
 
          var color = 'rgba(0,255,0,0.3)';
 
-         if (this.directions[t].index !== this.safetile)
+         if (!this.anyMatches(this.directions[t].index, this.safetiles))
          {
          color = 'rgba(255,0,0,0.3)';
          }
