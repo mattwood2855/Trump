@@ -4,7 +4,6 @@
 
 var Menu = function(game) {
 
-    this.selectedButton = 0
 
 }
 
@@ -20,22 +19,29 @@ Menu.prototype = {
         game.load.image('donate', 'assets/pics/donate.png');
         game.load.image('selector', 'assets/pics/steak.png');
     },
+    //
+    //var steak;
+    //var upKey;
+    //var downKey;
+    //var leftKey;
+    //var rightKey;
 
     create: function () {
         // Add a sprite to your game, here the sprite will be the game's logo
         // Parameters are : X , Y , image name (see above)
         this.add.sprite(0, 0, 'menu');
         this.add.button(500, 300, 'play', this.startGame, this);
-        this.add.sprite(430, 300, 'selector');
+
         this.add.button(500, 380, 'instructions', this.startInstructions, this);
         this.add.button(500, 460, 'donate', this.startDonate, this);
 
-        // add keyboard controls
-        this.selectKeyDown = this.game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
-        this.selectKeyDown.onDown(this.moveSelectorDown, this);
+        //steak = game.add.sprite(430, 300, 'selector');
+        //
+        //upKey = game.input.keyboard.addKey(Phaser.Keyboard.UP);
+        //downKey = game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
+        //leftKey = game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
+        //rightKey = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
 
-        // keep the spacebar from propogating up to the browser
-        this.game.input.keyboard.addKeyCapture([Phaser.Keyboard.DOWN]);
     },
 
     startGame: function () {
@@ -44,9 +50,5 @@ Menu.prototype = {
         game.state.start('Game');
 
     },
-
-    moveSelectorDown: function () {
-        this.add.sprite(430, 380, 'selector');
-    }
 
 };
