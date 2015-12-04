@@ -1,10 +1,12 @@
-var PhaserGame = function (game) {
+var Game = function (game) {
 
     this.map = null;
     this.layer = null;
 
-    this.lives = 3;
-    this.points = 0;
+    this.scoreText = null;
+    this.livesText = null;
+    this.livesImages = [];
+
     this.trump = null;
 
     this.winText = '';
@@ -43,7 +45,7 @@ var PhaserGame = function (game) {
     this.loadingNextLevel = false;
 };
 
-PhaserGame.prototype = {
+Game.prototype = {
 
     init: function () {
 
@@ -55,9 +57,12 @@ PhaserGame.prototype = {
         // Load trump sprite
         this.load.image('trump', 'assets/sprites/trump2.png');
 
-        // Load Steak picture
+        // Load Steak and Duck pictures
         this.load.image('steak', 'assets/pics/steak.png');
         this.load.image('duck', 'assets/pics/duck.png');
+
+        // Load image for lives
+        this.load.image('trumpLife', 'assets/pics/trumpLife.png');
 
         // Load level tilemap
         this.load.tilemap('iowa', 'assets/levels/iowa.json', null, Phaser.Tilemap.TILED_JSON);
@@ -78,11 +83,6 @@ PhaserGame.prototype = {
     },
 
     create: function () {
-        game.stage.backgroundColor = '#414040';
-
-        var style = { font: "65px Arial", fill: "#52bace", align: "center" };
-        text = game.add.text(game.world.centerX, 100, "decoding", style);
-        text.anchor.set(0.5);
 
         this.map = game.add.tilemap('iowa');
         this.map.addTilesetImage('IowaTiles', 'tiles');
@@ -110,7 +110,7 @@ PhaserGame.prototype = {
                     // Create a new steak object at the center of this tile
                     var newSteak = this.add.sprite((tile.x * this.gridsize) + this.gridsize/2, tile.y * this.gridsize + this.gridsize/2, 'steak');
                     newSteak.anchor.set(0.5);
-                    newSteak.scale.setTo(0.35,0.35);
+                    newSteak.scale.setTo(0.5,0.5);
                     // Add a zoom tween that last forever
                     //this.add.tween(newSteak.scale).to({ x:.5, y:.5 }, 400, Phaser.Easing.Linear.None, true, 0, -1, true);
                     // Add the steak to the array of steaks.
@@ -145,6 +145,18 @@ PhaserGame.prototype = {
 
         game.sound.setDecodedCallback(this.powerupSounds, this.start, this);
 
+        var style = { font: "24px Arial Bold", fill: "#52bace", align: "center" };
+        this.livesText = game.add.text(0, 0, "Lives:", style);
+        this.livesText.bringToTop();
+
+        for(var x = 0; x < game.lives; x++) {
+            this.livesImages.push(this.add.sprite(this.livesText.width + 32 * x, 0, 'trumpLife').scale.set(0.5));
+        }
+
+        style = { font: "24px Arial Bold", fill: "#52bace", align: "center" };
+        this.scoreText = game.add.text(0, this.livesText.height, "Score: " + game.points.toString(), style);
+        this.scoreText.bringToTop();
+
     },
 
     start: function(){
@@ -153,7 +165,7 @@ PhaserGame.prototype = {
             this.powerupSounds[x].onStop.add(this.powerupSoundStopped, this);
         }
 
-        this.move(Phaser.DOWN);
+        //this.move(Phaser.DOWN);
 
     },
 
@@ -297,6 +309,7 @@ PhaserGame.prototype = {
                 loadTween.onComplete.add(this.loadNextLevel, this);
             }
 
+
             this.physics.arcade.collide(this.trump, this.layer);
 
             this.marker.x = this.math.snapToFloor(Math.floor(this.trump.x), this.gridsize) / this.gridsize;
@@ -324,7 +337,8 @@ PhaserGame.prototype = {
                         this.eatSteakSound.play();
                     }
                     // Give the player a point
-                    this.points++;
+                    game.points++;
+                    this.scoreText.setText("Score: " + game.points.toString());
                     // Remove the steak from the array
                     this.steaks.splice(x, 1);
                     // destroy the steak for garbage collection
@@ -385,5 +399,3 @@ PhaserGame.prototype = {
         game.state.start('LoadNextLevel');
     }
 };
-
-//game.state.add('Game', PhaserGame, true);
