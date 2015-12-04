@@ -118,9 +118,7 @@ Menu.prototype = {
             if (this.selectKey.isDown) {
                 if(this.currentSelection == 1){
                     this.backgroundSound.stop();
-                    this.background = this.add.sprite(0, 0, 'instructionsMenu');
-                    this.background.width = game.width;
-                    this.background.height = game.height;
+                    game.state.start('InstructionsMenu');
                 }
             }
             if (this.selectKey.isDown) {
