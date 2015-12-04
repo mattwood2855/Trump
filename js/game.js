@@ -8,6 +8,7 @@ var Game = function (game) {
     this.livesImages = [];
 
     this.trump = null;
+    this.trump.hasPowerup = false;
 
     this.winText = '';
 
@@ -232,7 +233,7 @@ Game.prototype = {
         else
         {
             this.turning = turnTo;
-            if(turnTo == 1) {
+            /*if(turnTo == 1) {
                 this.trump.animations.play('right', 4, true);
                 this.trump.scale.x = Math.abs(this.trump.scale.x) * -1;
             }
@@ -245,7 +246,7 @@ Game.prototype = {
             }
             if(turnTo == 4) {
                 this.trump.animations.play('down', 4, true);
-            }
+            }*/
 
             this.turnPoint.x = (this.marker.x * this.gridsize) + (this.gridsize / 2);
             this.turnPoint.y = (this.marker.y * this.gridsize) + (this.gridsize / 2);
@@ -396,6 +397,8 @@ Game.prototype = {
                 // If there is a collision with trump
                 var powerupToEat = this.powerups[x];
                 if (Phaser.Rectangle.intersects(this.trump, powerupToEat)) {
+                    this.trump.hasPowerup = true;
+                    // Play a random powerup sound
                     this.powerupSounds[Math.floor((Math.random() * 4))].play();
                     this.powerupSoundPlaying = true;
                     // Remove the steak from the array

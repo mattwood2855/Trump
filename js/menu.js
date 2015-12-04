@@ -76,13 +76,11 @@ Menu.prototype = {
 
         // Decode the background audio file
         this.backgroundSound = this.add.audio('trumpSaysChina');
-
+// add select sound
+        this.clickSound = this.add.audio('plop');
+        this.clickSound.volume = 0.5;
         game.sound.setDecodedCallback(this.backgroundSound, this.start, this);
 
-        // add select sound
-        this.clickSound = this.add.audio('plop');
-
-        game.sound.setDecodedCallback(this.clickSound, this.start, this);
     },
 
     start: function(){
