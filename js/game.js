@@ -344,8 +344,7 @@ Game.prototype = {
             // Perform collisions between player and level
             this.physics.arcade.collide(this.trump, this.layer);
 
-            if(this.powerupMode)
-            {
+            if(this.powerupMode) {
                 this.applySpecialEffects();
             }
 
