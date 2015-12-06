@@ -31,6 +31,7 @@ var Game = function (game) {
 
     this.safetiles = [12,36,37];
     this.gridsize = 64;
+    this.pathPoints = [];
 
     this.speed = 150;
     this.threshold = 3;
@@ -110,7 +111,7 @@ Game.prototype = {
         this.trump.animations.add('right', [2,3]);
         this.trump.animations.play('down', 4, true);
 
-        this.enemy.create(this.trump, this);
+        this.enemy.create(this);
 
         this.physics.arcade.enable(this.trump);
 
@@ -245,20 +246,7 @@ Game.prototype = {
         else
         {
             this.turning = turnTo;
-            /*if(turnTo == 1) {
-                this.trump.animations.play('right', 4, true);
-                this.trump.scale.x = Math.abs(this.trump.scale.x) * -1;
-            }
-            if(turnTo == 2) {
-                this.trump.animations.play('right', 4, true);
-                this.trump.scale.x = Math.abs(this.trump.scale.x);
-            }
-            if(turnTo == 3) {
-                this.trump.animations.play('down', 4, true);
-            }
-            if(turnTo == 4) {
-                this.trump.animations.play('down', 4, true);
-            }*/
+
 
             this.turnPoint.x = (this.marker.x * this.gridsize) + (this.gridsize / 2);
             this.turnPoint.y = (this.marker.y * this.gridsize) + (this.gridsize / 2);
@@ -339,6 +327,7 @@ Game.prototype = {
         if(!this.loadingNextLevel) {
 
 
+
             // Check if the player ate all the steaks (WIN)
             if (this.steaks.length == 0) {
                 this.loadingNextLevel = true;
@@ -392,6 +381,7 @@ Game.prototype = {
                 this.turn();
             }
 
+            this.enemy.update()
 
             // Go through each steak
             for (var x = 0; x < this.steaks.length; x++) {
@@ -459,7 +449,86 @@ Game.prototype = {
         this.powerupSoundPlaying = false;
     },
 
+    getPotentialMoves: function(tile){
+
+        var validMoves = [];
+
+        if(this.anyMatches(this.map.getTileLeft(this.layer.index, tile.x, tile.y), this.safetiles)){
+            validMoves.push(this.map.getTileLeft(this.layer.index, tile.x, tile.y))
+        }
+        if(this.anyMatches(this.map.getTileRight(this.layer.index, tile.x, tile.y), this.safetiles)){
+            validMoves.push(this.map.getTileRight(this.layer.index, tile.x, tile.y))
+        }
+        if(this.anyMatches(this.map.getTileAbove(this.layer.index, tile.x, tile.y), this.safetiles)){
+            validMoves.push(this.map.getTileAbove(this.layer.index, tile.x, tile.y))
+        }
+        if(this.anyMatches(this.map.getTileBelow(this.layer.index, tile.x, tile.y), this.safetiles)){
+            validMoves.push(this.map.getTileBelow(this.layer.index, tile.x, tile.y))
+        }
+
+        return validMoves;
+    },
+
+    recursiveDrawPoints: function(tile, level){
+
+        // Max recursion level
+        if(level > 3) return;
+
+        // Get all the surrounding tiles
+        var tiles = [];
+        tiles[0] = this.map.getTileLeft(this.layer.index, tile.x, tile.y);
+        tiles[1] = this.map.getTileRight(this.layer.index, tile.x, tile.y);
+        tiles[2] = this.map.getTileAbove(this.layer.index, tile.x, tile.y);
+        tiles[3] = this.map.getTileBelow(this.layer.index, tile.x, tile.y);
+
+        // Go through each surrounding tile
+        for(var x = 0; x < 4; x++)
+        {
+            // If the tile exists and is not the player tile
+            if (tiles[x] && !(tiles[x].x == this.marker.x && tiles[x].y == this.marker.y)) {
+                // Calculate the 1 dimensional position of the tile
+                var tile1Dindex = tiles[x].y * this.map.width + tiles[x].x;
+
+                // If the tile is a path tile (not a wall)
+                if (this.anyMatches(tiles[x].index, this.safetiles)) {
+
+                    // If this tile has already been assigned a point
+                    if(this.pathPoints[tile1Dindex]){
+
+                        // If this path calculation is shorter
+                        if(level < this.pathPoints[tile1Dindex]){
+
+                            // Assign the smaller point value
+                            this.pathPoints[tile1Dindex] = level;
+                            game.debug.text(this.pathPoints[tile1Dindex], tiles[x].x * this.gridsize + this.gridsize / 2, tiles[x].y * this.gridsize + this.gridsize / 2);
+                        }
+                    }
+                    else {
+                        this.pathPoints[tile1Dindex] = level;
+                        game.debug.text(this.pathPoints[tile1Dindex], tiles[x].x * this.gridsize + this.gridsize / 2, tiles[x].y * this.gridsize + this.gridsize / 2);
+                    }
+
+
+                    this.recursiveDrawPoints(tiles[x], level + 1);
+                }
+            }
+        }
+    },
+
     render: function () {
+
+        this.pathPoints = [];
+        this.recursiveDrawPoints(this.marker, 1);
+
+        /*for(var y = 0; y < this.map.height; ++y) {
+            for (var x = 0; x < this.map.width; ++x) {
+                var tile = this.map.getTile(x, y);
+                if(this.anyMatches(tile.index, this.safetiles)){
+
+                    game.debug.text("0", tile.x * this.gridsize+ this.gridsize/2, tile.y * this.gridsize + this.gridsize/2);
+                }
+            }
+        }*/
 
         //  Un-comment this to see the debug drawing
 
