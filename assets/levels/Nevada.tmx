@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="19" height="12" tilewidth="64" tileheight="64" nextobjectid="1">
+ <tileset firstgid="1" name="PyramidRoad" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="PyramidRoad.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="2" name="PyramidRoad2" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="PyramidRoad2.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="3" name="Purpletoorangesky" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="Purpletoorangesky.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="4" name="orangesky" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="orangesky.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="5" name="BullSkull" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="BullSkull.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="6" name="nevadaoutline" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="nevadaoutline.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="7" name="pyramid1nevada" tilewidth="64" tileheight="64" tilecount="4">
+  <image source="pyramid1nevada.jpg" width="128" height="128"/>
+ </tileset>
+ <tileset firstgid="11" name="'16Nevada" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="'16Nevada.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="12" name="CasinoGrid" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="CasinoGrid.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="13" name="CasinoGridlarge" tilewidth="64" tileheight="64" tilecount="4">
+  <image source="CasinoGridlarge.jpg" width="128" height="128"/>
+ </tileset>
+ <tileset firstgid="17" name="cacti1" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="cacti1.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="18" name="cactitop" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="cactitop.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="19" name="CactiSunset" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="CactiSunset.jpg" width="64" height="64"/>
+ </tileset>
+ <layer name="Tile Layer 1" width="19" height="12">
+  <data encoding="csv">
+6,11,6,11,6,11,6,11,6,11,6,11,6,11,6,11,6,11,6,
+3,3,3,3,18,3,18,3,3,3,18,3,18,3,3,3,18,3,3,
+3,3,18,3,17,3,17,3,18,3,17,3,17,3,3,3,17,3,3,
+3,3,17,3,17,3,17,3,17,3,17,3,17,3,3,3,17,3,3,
+17,17,17,3,17,3,17,3,17,17,17,17,17,17,17,17,17,17,17,
+3,3,17,3,17,3,17,3,3,3,17,3,3,13,14,3,17,3,3,
+19,19,17,19,17,19,17,19,19,19,17,19,18,15,16,19,17,19,19,
+1,2,17,17,17,17,17,1,18,2,17,1,17,5,2,1,17,2,1,
+17,17,17,5,17,1,17,17,17,17,17,17,17,17,17,17,17,17,17,
+2,2,7,8,17,1,2,1,17,1,17,1,5,1,2,1,17,1,2,
+2,2,9,10,17,17,17,17,17,17,17,17,17,17,17,1,17,1,5,
+11,6,11,6,11,6,11,6,11,6,11,6,11,6,11,6,11,6,11
+</data>
+ </layer>
+</map>

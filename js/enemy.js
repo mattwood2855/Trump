@@ -7,19 +7,25 @@ AI = {
     FRIGHTENED: 2
 };
 
+EnemyType = {
+    RED: 0,
+    PINK: 1,
+    BLUE: 2,
+    YELLOW: 3,
+}
+
 function Enemy() {
 
     this.ai = AI.SCATTER;
     this.current = Phaser.NONE;
-    this.currentTileScore = 100;
     this.delay = 0;
     this.directions = [null, null, null, null, null];
     this.gameRef = {};
     this.marker = new Phaser.Point();
     this.opposites = [Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP];
+    this.powerupMode = false;
     this.speed = 200;
     this.sprite = {};
-    this.target = {};
     this.threshold = 3;
     this.turning = Phaser.NONE;
     this.turnPoint = new Phaser.Point();
@@ -28,67 +34,9 @@ function Enemy() {
 
 Enemy.prototype = {
 
-    preload: function (gameRef) {
-
-        // Get a permanent reference to the game
-        this.gameRef = gameRef;
-
-        // Load the sprite sheet for the bad guy
-        this.gameRef.load.spritesheet('enemy', 'assets/sprites/pacmansprites.png', 32, 32, 64);
-
-    },
-
-    create: function () {
-
-        // Create the enemy sprite
-        this.sprite = this.gameRef.add.sprite(96, 96, 'enemy');
-        this.sprite.anchor.set(0.5);
-        this.sprite.scale.setTo(2, 2);
-
-        // Create all the animations
-        this.sprite.animations.add('right', [22, 23]);
-        this.sprite.animations.add('left', [20, 21]);
-        this.sprite.animations.add('up', [16, 17]);
-        this.sprite.animations.add('down', [18, 19]);
-
-        // Enable physics for the enemy
-        this.gameRef.physics.arcade.enable(this.sprite);
-
-    },
-
-    update: function () {
-
-        // Perform collisions between player and level
-        this.gameRef.physics.arcade.collide(this.sprite, this.gameRef.layer);
-
-        // Wrap the player if they walk off the edge
-        if(this.sprite.x < -this.gameRef.gridsize){
-            this.sprite.x = game.width + this.gameRef.gridsize/2;
-        }
-        if(this.sprite.x > game.width + this.gameRef.gridsize/2){
-            this.sprite.x = -this.gameRef.gridsize;
-        }
-        if(this.sprite.y < -this.gameRef.gridsize){
-            this.sprite.y = game.height + this.gameRef.gridsize/2;
-        }
-        if(this.sprite.y > game.height + this.gameRef.gridsize/2){
-            this.sprite.y = -this.gameRef.gridsize;
-        }
-
-        // Determine the best direction to move
-        this.calculateNextMove();
-
-        // If turning, then turn the enemy
-        if (this.turning !== Phaser.NONE) {
-            this.turn();
-        }
-
-        // Update the animations
-        if(this.current == 1) this.sprite.animations.play('left', 4, true);
-        if(this.current == 2) this.sprite.animations.play('right', 4, true);
-        if(this.current == 3) this.sprite.animations.play('up', 4, true);
-        if(this.current == 4) this.sprite.animations.play('down', 4, true);
-
+    activatePowerupMode: function(){
+        this.powerupMode = true;
+        this.sprite.animations.play('powerup', 4, true);
     },
 
     calculateNextMove: function(){
@@ -125,8 +73,15 @@ Enemy.prototype = {
         }
 
         // If the best move is different than the current direction and not equal to 0 (0 occurs when the enemy is not near a scored tile)
-        if (this.current !== bestMove && bestMove !== 0) {
-            this.checkDirection(bestMove);
+        if (this.current !== bestMove) {
+            if( bestMove !== 0) {
+                this.checkDirection(bestMove);
+            }
+            else{
+                if(this.sprite.x > this.gameRef.player.sprite.x ){
+                    this.checkDirection(1);
+                }
+            }
         }
         // If there is no better move than set turning to NONE
         else {
@@ -165,6 +120,85 @@ Enemy.prototype = {
 
     },
 
+    create: function (x,y, enemyType) {
+
+        // Create the enemy sprite
+        this.sprite = this.gameRef.add.sprite(x, y, 'enemy');
+        this.sprite.anchor.set(0.5);
+        this.sprite.scale.setTo(2, 2);
+
+        // Create all the animations
+        if(enemyType == EnemyType.RED) {
+            this.sprite.animations.add('right', [22, 23]);
+            this.sprite.animations.add('left', [20, 21]);
+            this.sprite.animations.add('up', [16, 17]);
+            this.sprite.animations.add('down', [18, 19]);
+        }
+        else if(enemyType == EnemyType.PINK){
+            this.sprite.animations.add('right', [30, 31]);
+            this.sprite.animations.add('left', [28, 29]);
+            this.sprite.animations.add('up', [24, 25]);
+            this.sprite.animations.add('down', [26, 27]);
+        }
+        else if(enemyType == EnemyType.BLUE){
+            this.sprite.animations.add('right', [38, 39]);
+            this.sprite.animations.add('left', [36, 37]);
+            this.sprite.animations.add('up', [32, 33]);
+            this.sprite.animations.add('down', [34, 35]);
+        }
+        else if(enemyType == EnemyType.YELLOW){
+            this.sprite.animations.add('right', [46, 47]);
+            this.sprite.animations.add('left', [44, 45]);
+            this.sprite.animations.add('up', [40, 41]);
+            this.sprite.animations.add('down', [42, 43]);
+        }
+        this.sprite.animations.add('powerup', [12,13]);
+        this.sprite.animations.add('powerupEnding', [12,13,14,15]);
+
+        // Enable physics for the enemy
+        this.gameRef.physics.arcade.enable(this.sprite);
+
+        this.move(Math.floor(Math.random() * 4 + 1));
+    },
+
+    deActivatePowerupMode: function(){
+        this.powerupMode = false;
+    },
+
+    move: function (direction) {
+
+        // Create a temp var to hold the speed
+        var speed = this.speed;
+
+        // If going left or up, negate the speed
+        if (direction === Phaser.LEFT || direction === Phaser.UP) {
+            speed = -speed;
+        }
+
+        // Update if x-axis movement
+        if (direction === Phaser.LEFT || direction === Phaser.RIGHT) {
+            this.sprite.body.velocity.x = speed;
+        }
+        // Otherwise, update y-axis movement
+        else {
+            this.sprite.body.velocity.y = speed;
+        }
+
+        // Set the current direction to the moved direction
+        this.current = direction;
+
+    },
+
+    preload: function (gameRef) {
+
+        // Get a permanent reference to the game
+        this.gameRef = gameRef;
+
+        // Load the sprite sheet for the bad guy
+        this.gameRef.load.spritesheet('enemy', 'assets/sprites/pacmansprites.png', 32, 32, 64);
+
+    },
+
     turn: function () {
 
         // Get the coordinates of the enemy
@@ -192,29 +226,45 @@ Enemy.prototype = {
 
     },
 
-    move: function (direction) {
+    update: function () {
 
-        // Create a temp var to hold the speed
-        var speed = this.speed;
+        // Perform collisions between player and level
+        this.gameRef.physics.arcade.collide(this.sprite, this.gameRef.layer);
 
-        // If going left or up, negate the speed
-        if (direction === Phaser.LEFT || direction === Phaser.UP) {
-            speed = -speed;
+        // Wrap the player if they walk off the edge
+        if(this.sprite.x < -this.gameRef.gridsize){
+            this.sprite.x = game.width + this.gameRef.gridsize/2;
+        }
+        if(this.sprite.x > game.width + this.gameRef.gridsize/2){
+            this.sprite.x = -this.gameRef.gridsize;
+        }
+        if(this.sprite.y < -this.gameRef.gridsize){
+            this.sprite.y = game.height + this.gameRef.gridsize/2;
+        }
+        if(this.sprite.y > game.height + this.gameRef.gridsize/2){
+            this.sprite.y = -this.gameRef.gridsize;
         }
 
-        // Update if x-axis movement
-        if (direction === Phaser.LEFT || direction === Phaser.RIGHT) {
-            this.sprite.body.velocity.x = speed;
-        }
-        // Otherwise, update y-axis movement
-        else {
-            this.sprite.body.velocity.y = speed;
+        // Determine the best direction to move
+        this.calculateNextMove();
+
+        // If turning, then turn the enemy
+        if (this.turning !== Phaser.NONE) {
+            this.turn();
         }
 
-        // Set the current direction to the moved direction
-        this.current = direction;
+        // Update the animations
+        if(!this.powerupMode) {
+            if (this.current == 1) this.sprite.animations.play('left', 4, true);
+            if (this.current == 2) this.sprite.animations.play('right', 4, true);
+            if (this.current == 3) this.sprite.animations.play('up', 4, true);
+            if (this.current == 4) this.sprite.animations.play('down', 4, true);
+        }
 
+    },
+
+    warnPowerupMode: function(){
+        this.sprite.animations.play('powerupEnding', 4, true)
     }
-
 
 };

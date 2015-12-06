@@ -33,6 +33,7 @@ Player.prototype = {
 
     deActivatePowerupMode: function(){
         this.powerupMode = false;
+        this.sprite.tint = 16777215;
     },
 
     checkDirection: function (turnTo) {

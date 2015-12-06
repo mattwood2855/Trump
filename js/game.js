@@ -1,4 +1,3 @@
-
 var filter;
 var sprite;
 
@@ -11,8 +10,13 @@ var Game = function (game) {
     this.livesText = null;
     this.livesImages = [];
 
-    this.player = new Player()
-    this.enemy = new Enemy();
+    this.player = new Player();
+    this.enemies = [];
+    this.enemies[0] = new Enemy();
+    this.enemies[1] = new Enemy();
+    this.enemies[2] = new Enemy();
+    this.enemies[3] = new Enemy();
+    this.everyOther = false;
 
     this.winText = '';
 
@@ -20,16 +24,19 @@ var Game = function (game) {
     this.steakTileIndex = 36;
     this.powerups = [];
     this.powerupTileIndex = 37;
-    this.powerupModeTimer = {};
+    this.powerupModeLength = 6000;
+
     this.powerupMode = false;
-    this.powerupModeLength = 5000;
+    this.warnPowerupModeLength = 3000;
+
+
 
     this.eatSteakSound = null;
     this.powerupSounds = [];
     this.powerupSoundPlaying = false;
     this.iRunSound = null;
 
-    this.safetiles = [12,36,37];
+    this.safetiles = [12, 36, 37];
     this.gridsize = 64;
     this.pathPoints = [];
 
@@ -53,7 +60,9 @@ Game.prototype = {
         // Preload the player
         this.player.preload(this);
         // Preload the enemy
-        this.enemy.preload(this);
+        for (var x = 0; x < this.enemies.length; x++) {
+            this.enemies[x].preload(this);
+        }
 
         // Load Steak and Duck pictures
         this.load.image('steak', 'assets/pics/steak.png');
@@ -82,42 +91,52 @@ Game.prototype = {
 
     create: function () {
 
+        this.powerupModeTimer = game.time.create(false);
+        this.powerupModeTimer.add(this.powerupModeLength, this.stopPowerupMode, this);
+        this.warnPowerupModeTimer = game.time.create(false);
+        this.warnPowerupModeTimer.add(this.warnPowerupModeLength, this.warnStopPowerupMode, this);
+
         this.map = game.add.tilemap('iowa');
         this.map.addTilesetImage('IowaTiles', 'tiles');
         this.layer = this.map.createLayer('Ground');
-        this.map.setCollisionByExclusion([12,36,37], true, this.layer);
+        this.map.setCollisionByExclusion([12, 36, 37], true, this.layer);
 
         this.player.create();
-        this.enemy.create();
+
+        this.enemies[0].create(96, 96, EnemyType.RED);
+        this.enemies[1].create(1120, 96, EnemyType.PINK);
+        this.enemies[2].create(96, 672, EnemyType.BLUE);
+        this.enemies[3].create(1120, 672, EnemyType.YELLOW);
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
         // Create all the pickups
         // Loop through all tiles in the map
-        for(var y = 0; y < this.map.height; ++y){
-            for(var x = 0; x < this.map.width; ++x){
+        for (var y = 0; y < this.map.height; ++y) {
+            for (var x = 0; x < this.map.width; ++x) {
                 var tile = this.map.getTile(x, y);
                 // If the tile is a steak tile
-                if(tile.index == this.steakTileIndex)
-                {
+                if (tile.index == this.steakTileIndex) {
                     // Create a new steak object at the center of this tile
-                    var newSteak = this.add.sprite((tile.x * this.gridsize) + this.gridsize/2, tile.y * this.gridsize + this.gridsize/2, 'steak');
+                    var newSteak = this.add.sprite((tile.x * this.gridsize) + this.gridsize / 2, tile.y * this.gridsize + this.gridsize / 2, 'steak');
                     newSteak.anchor.set(0.5);
-                    newSteak.scale.setTo(0.5,0.5);
+                    newSteak.scale.setTo(0.5, 0.5);
 
                     // Add the steak to the array of steaks.
                     this.steaks.push(newSteak);
                 }
                 // If this is a powerup tile
-                if(tile.index == this.powerupTileIndex)
-                {
+                if (tile.index == this.powerupTileIndex) {
                     // Create a new powerup object at the center of this tile
-                    var newPowerup = this.add.sprite((tile.x * this.gridsize) + this.gridsize/2, tile.y * this.gridsize + this.gridsize/2, 'duck');
+                    var newPowerup = this.add.sprite((tile.x * this.gridsize) + this.gridsize / 2, tile.y * this.gridsize + this.gridsize / 2, 'duck');
                     newPowerup.anchor.set(0.5);
-                    newPowerup.scale.setTo(0.5,0.5);
+                    newPowerup.scale.setTo(0.5, 0.5);
 
                     // Add a zoom tween that last forever
-                    this.add.tween(newPowerup.scale).to({ x:.75, y:.75 }, 350, Phaser.Easing.Linear.None, true, 0, -1, true);
+                    this.add.tween(newPowerup.scale).to({
+                        x: .75,
+                        y: .75
+                    }, 350, Phaser.Easing.Linear.None, true, 0, -1, true);
 
                     // Add the steak to the array of steaks.
                     this.powerups.push(newPowerup);
@@ -139,30 +158,30 @@ Game.prototype = {
 
         game.sound.setDecodedCallback(this.powerupSounds, this.start, this);
 
-        var style = { font: "24px Arial Bold", fill: "#52bace", align: "center" };
+        var style = {font: "24px Arial Bold", fill: "#52bace", align: "center"};
         this.livesText = game.add.text(0, 0, "Lives:", style);
         this.livesText.bringToTop();
 
-        for(var x = 0; x < game.lives; x++) {
+        for (var x = 0; x < game.lives; x++) {
             this.livesImages.push(this.add.sprite(this.livesText.width + 32 * x, 0, 'trumpLife').scale.set(0.5));
         }
 
-        style = { font: "24px Arial Bold", fill: "#52bace", align: "center" };
+        style = {font: "24px Arial Bold", fill: "#52bace", align: "center"};
         this.scoreText = game.add.text(0, this.livesText.height, "Score: " + game.points.toString(), style);
         this.scoreText.bringToTop();
 
 
     },
 
-    start: function(){
+    start: function () {
 
-        for(var x = 0; x < this.powerupSounds.length; x++){
+        for (var x = 0; x < this.powerupSounds.length; x++) {
             this.powerupSounds[x].onStop.add(this.powerupSoundStopped, this);
         }
 
     },
 
-    anyMatches: function(value, array){
+    anyMatches: function (value, array) {
         for (var i = 0; i < array.length; i++) {
             if (value == array[i])
                 return true;
@@ -170,20 +189,17 @@ Game.prototype = {
         return false;
     },
 
-
     getAngle: function (to) {
 
         //  About-face?
-        if (this.current === this.opposites[to])
-        {
+        if (this.current === this.opposites[to]) {
             return "180";
         }
 
         if ((this.current === Phaser.UP && to === Phaser.LEFT) ||
             (this.current === Phaser.DOWN && to === Phaser.RIGHT) ||
             (this.current === Phaser.LEFT && to === Phaser.DOWN) ||
-            (this.current === Phaser.RIGHT && to === Phaser.UP))
-        {
+            (this.current === Phaser.RIGHT && to === Phaser.UP)) {
             return "-90";
         }
 
@@ -193,7 +209,7 @@ Game.prototype = {
 
     update: function () {
 
-        if(!this.loadingNextLevel) {
+        if (!this.loadingNextLevel) {
 
             // Check if the player ate all the steaks (WIN)
             if (this.steaks.length == 0) {
@@ -208,12 +224,26 @@ Game.prototype = {
                 loadTween.onComplete.add(this.loadNextLevel, this);
             }
 
-            if(this.powerupMode) {
+            if (this.powerupMode) {
                 //this.applySpecialEffects();
             }
 
             this.player.update();
-            this.enemy.update();
+
+            // Calculate the pathmap every other update to save cpu
+            this.everyOther = !this.everyOther;
+            if(this.everyOther) {
+
+                this.pathPoints = [];
+                for (var x = 0; x < this.map.width * this.map.height; x++) {
+                    this.pathPoints[x] = 20;
+                }
+                this.recursiveDrawPoints(this.player.marker, 0, 15);
+            }
+
+            for (var x = 0; x < this.enemies.length; x++) {
+                this.enemies[x].update();
+            }
 
             // Go through each steak
             for (var x = 0; x < this.steaks.length; x++) {
@@ -253,13 +283,12 @@ Game.prototype = {
     },
 
 
-
-    recursiveDrawPoints: function(tile, level, max){
+    recursiveDrawPoints: function (tile, level, max) {
 
         // Max recursion level
-        if(level > max) return;
+        if (level > max) return;
 
-        if(level == 0){
+        if (level == 0) {
             this.pathPoints[tile.y * this.map.width + tile.x] = level;
             level++;
         }
@@ -272,8 +301,7 @@ Game.prototype = {
         tiles[3] = this.map.getTileBelow(this.layer.index, tile.x, tile.y);
 
         // Go through each surrounding tile
-        for(var x = 0; x < 4; x++)
-        {
+        for (var x = 0; x < 4; x++) {
             // If the tile exists and is not the player tile
             if (tiles[x] && !(tiles[x].x == this.player.marker.x && tiles[x].y == this.player.marker.y)) {
                 // Calculate the 1 dimensional position of the tile
@@ -283,10 +311,10 @@ Game.prototype = {
                 if (this.anyMatches(tiles[x].index, this.safetiles)) {
 
                     // If this tile has already been assigned a point
-                    if(this.pathPoints[tile1Dindex]){
+                    if (this.pathPoints[tile1Dindex]) {
 
                         // If this path calculation is shorter
-                        if(level < this.pathPoints[tile1Dindex]){
+                        if (level < this.pathPoints[tile1Dindex]) {
 
                             // Assign the smaller point value
                             this.pathPoints[tile1Dindex] = level;
@@ -295,7 +323,7 @@ Game.prototype = {
                     else {
                         this.pathPoints[tile1Dindex] = level;
                     }
-                    this.recursiveDrawPoints(tiles[x], level + 1, 10);
+                    this.recursiveDrawPoints(tiles[x], level + 1, max);
                 }
             }
         }
@@ -303,41 +331,58 @@ Game.prototype = {
 
     render: function () {
 
-        this.pathPoints = [];
-        this.recursiveDrawPoints(this.player.marker, 0, 10);
-        for(var x = 0; x < this.pathPoints.length; x++){
-            if(this.pathPoints[x] >= 0)
-                game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x/this.map.width) * this.gridsize + this.gridsize / 2);
-        }
+        /*for (var x = 0; x < this.pathPoints.length; x++) {
+            if (this.pathPoints[x] >= 0)
+                game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x / this.map.width) * this.gridsize + this.gridsize / 2);
+        }*/
 
     },
 
-    loadNextLevel: function(){
+    loadNextLevel: function () {
         game.state.start('LoadNextLevel');
     },
 
-    startPowerupMode: function(){
+    startPowerupMode: function () {
 
         // Set the powerupMode flag
         this.powerupMode = true;
 
         this.player.activatePowerupMode();
+        for (var x = 0; x < this.enemies.length; x++) {
+            this.enemies[x].activatePowerupMode();
+        }
 
         // Play a random powerup sound
         this.powerupSounds[Math.floor((Math.random() * 4))].play();
         this.powerupSoundPlaying = true;
 
         // Start a timer to end the powerup mode
-        this.powerupModeTimer = game.time.create(false);
-        this.powerupModeTimer.loop(this.powerupModeLength, this.stopPowerupMode, this);
+        this.warnPowerupModeTimer.start();
         this.powerupModeTimer.start();
     },
 
-    stopPowerupMode:function(){
-        this.powerupMode = false;
+    warnStopPowerupMode: function(){
+        this.warnPowerupModeTimer.destroy();
+        this.warnPowerupModeTimer = game.time.create(false);
+        this.warnPowerupModeTimer.add(this.warnPowerupModeLength, this.warnStopPowerupMode, this);
+        for (var x = 0; x < this.enemies.length; x++) {
+            this.enemies[x].warnPowerupMode();
+        }
     },
 
-    powerupSoundStopped: function(){
+    stopPowerupMode: function () {
+
+        this.powerupModeTimer.destroy();
+        this.powerupModeTimer = game.time.create(false);
+        this.powerupModeTimer.add(this.powerupModeLength, this.stopPowerupMode, this);
+        this.powerupMode = false;
+        this.player.deActivatePowerupMode();
+        for (var x = 0; x < this.enemies.length; x++) {
+            this.enemies[x].deActivatePowerupMode();
+        }
+    },
+
+    powerupSoundStopped: function () {
         this.powerupSoundPlaying = false;
     }
 };

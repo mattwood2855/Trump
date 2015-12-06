@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="19" height="12" tilewidth="64" tileheight="64" nextobjectid="1">
+ <tileset firstgid="1" name="SCBeach1" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="SCBeach1.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="2" name="SCTree" tilewidth="64" tileheight="64" tilecount="4">
+  <image source="SCTree.jpg" width="144" height="144"/>
+ </tileset>
+ <tileset firstgid="6" name="SCTree2" tilewidth="64" tileheight="64" tilecount="9">
+  <image source="SCTree2.jpg" width="216" height="216"/>
+ </tileset>
+ <tileset firstgid="15" name="SCTree3" tilewidth="64" tileheight="64" tilecount="9">
+  <image source="SCTree3.jpg" width="192" height="192"/>
+ </tileset>
+ <tileset firstgid="24" name="south_carolina" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="south_carolina.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="25" name="SCLighthouse" tilewidth="64" tileheight="64" tilecount="2">
+  <image source="SCLighthouse.jpg" width="64" height="128"/>
+ </tileset>
+ <tileset firstgid="27" name="SCLighthouse2" tilewidth="64" tileheight="64" tilecount="6">
+  <image source="SCLighthouse2.jpg" width="128" height="192"/>
+ </tileset>
+ <tileset firstgid="33" name="ForestTile" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="ForestTile.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="34" name="TideTile" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="TideTile.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="35" name="FootprintTile" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="FootprintTile.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="36" name="SCCloudtile" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="SCCloudtile.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="37" name="ShellSCTile" tilewidth="64" tileheight="64" tilecount="4">
+  <image source="ShellSCTile.jpg" width="128" height="128"/>
+ </tileset>
+ <tileset firstgid="41" name="sand1tile" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="sand1tile.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="42" name="bluetile" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="bluetile.jpg" width="64" height="64"/>
+ </tileset>
+ <layer name="Tile Layer 1" width="19" height="12">
+  <data encoding="csv">
+24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,
+24,36,36,36,36,35,35,35,35,36,36,36,36,36,36,36,36,36,24,
+24,35,35,35,35,35,36,36,35,35,35,36,36,36,36,36,36,36,24,
+35,35,42,35,42,42,42,15,16,17,35,42,42,42,42,42,35,35,35,
+24,42,42,35,35,35,35,18,19,20,35,42,42,42,35,35,35,42,24,
+24,1,1,1,35,1,35,21,22,23,35,1,1,1,35,1,35,1,24,
+35,35,41,41,35,41,35,35,35,35,35,41,41,35,35,35,35,35,35,
+24,35,35,35,35,35,41,41,41,41,41,41,35,35,34,34,37,38,24,
+24,41,41,27,28,35,41,41,35,35,35,35,35,34,34,34,39,40,24,
+24,34,34,29,30,35,35,35,35,34,34,34,34,34,34,34,34,34,24,
+24,34,34,31,32,34,34,34,34,34,34,34,34,34,34,34,34,34,24,
+24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24
+</data>
+ </layer>
+</map>
