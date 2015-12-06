@@ -1,3 +1,7 @@
+
+var filter;
+var sprite;
+
 var Game = function (game) {
 
     this.map = null;
@@ -7,8 +11,8 @@ var Game = function (game) {
     this.livesText = null;
     this.livesImages = [];
 
-    this.trump = null;
-    this.trump.hasPowerup = false;
+    this.trump = {};
+    this.enemy = new Enemy();
 
     this.winText = '';
 
@@ -16,6 +20,9 @@ var Game = function (game) {
     this.steakTileIndex = 36;
     this.powerups = [];
     this.powerupTileIndex = 37;
+    this.powerupModeTimer = {};
+    this.powerupMode = false;
+    this.powerupModeLength = 5000;
 
     this.eatSteakSound = null;
     this.powerupSounds = [];
@@ -55,9 +62,11 @@ Game.prototype = {
 
     preload: function () {
 
+
         // Load trump sprite
-        //this.load.image('trump', 'assets/sprites/trump2.png');
+
         this.load.spritesheet('trump', 'assets/sprites/trump.png', 64, 64, 4);
+        this.enemy.preload(this);
 
         // Load Steak and Duck pictures
         this.load.image('steak', 'assets/pics/steak.png');
@@ -86,6 +95,8 @@ Game.prototype = {
 
     create: function () {
 
+
+
         this.map = game.add.tilemap('iowa');
         this.map.addTilesetImage('IowaTiles', 'tiles');
 
@@ -99,7 +110,7 @@ Game.prototype = {
         this.trump.animations.add('right', [2,3]);
         this.trump.animations.play('down', 4, true);
 
-
+        this.enemy.create(this.trump, this);
 
         this.physics.arcade.enable(this.trump);
 
@@ -163,6 +174,7 @@ Game.prototype = {
         style = { font: "24px Arial Bold", fill: "#52bace", align: "center" };
         this.scoreText = game.add.text(0, this.livesText.height, "Score: " + game.points.toString(), style);
         this.scoreText.bringToTop();
+
 
     },
 
@@ -326,6 +338,7 @@ Game.prototype = {
 
         if(!this.loadingNextLevel) {
 
+
             // Check if the player ate all the steaks (WIN)
             if (this.steaks.length == 0) {
                 this.loadingNextLevel = true;
@@ -341,6 +354,11 @@ Game.prototype = {
 
             // Perform collisions between player and level
             this.physics.arcade.collide(this.trump, this.layer);
+
+            if(this.powerupMode)
+            {
+                this.applySpecialEffects();
+            }
 
             // Wrap the player if they walk off the edge
             if(this.trump.x < -this.gridsize){
@@ -374,7 +392,7 @@ Game.prototype = {
                 this.turn();
             }
 
-            // Eat steaks
+
             // Go through each steak
             for (var x = 0; x < this.steaks.length; x++) {
                 // If there is a collision with trump
@@ -392,22 +410,49 @@ Game.prototype = {
                     steakToEat.destroy();
                 }
             }
+
             // Go through powerups
             for (var x = 0; x < this.powerups.length; x++) {
                 // If there is a collision with trump
                 var powerupToEat = this.powerups[x];
                 if (Phaser.Rectangle.intersects(this.trump, powerupToEat)) {
-                    this.trump.hasPowerup = true;
-                    // Play a random powerup sound
-                    this.powerupSounds[Math.floor((Math.random() * 4))].play();
-                    this.powerupSoundPlaying = true;
-                    // Remove the steak from the array
+
+                    // Enter powerup mode
+                    this.startPowerupMode();
+
+                    // Remove the powerup from the array
                     this.powerups.splice(x, 1);
-                    // destroy the steak for garbage collection
+
+                    // destroy the powerup for garbage collection
                     powerupToEat.destroy();
                 }
             }
         }
+    },
+
+    applySpecialEffects: function(){
+
+        this.trump.tint = Math.random() * 0xffffff;
+        game.world.tint = Math.random() * 0xffffff;
+    },
+
+    startPowerupMode: function(){
+
+        // Set the powerupMode flag
+        this.powerupMode = true;
+
+        // Play a random powerup sound
+        this.powerupSounds[Math.floor((Math.random() * 4))].play();
+        this.powerupSoundPlaying = true;
+
+        // Start a timer to end the powerup mode
+        this.powerupModeTimer = game.time.create(false);
+        this.powerupModeTimer.loop(this.powerupModeLength, this.stopPowerupMode, this);
+        this.powerupModeTimer.start();
+    },
+
+    stopPowerupMode:function(){
+        this.powerupMode = false;
     },
 
     powerupSoundStopped: function(){

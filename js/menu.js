@@ -43,7 +43,7 @@ Menu.prototype = {
         this.load.image('donate', 'assets/pics/donate.png');
         this.load.image('steak', 'assets/pics/steak.png');
         this.load.image('blackScreen', 'assets/pics/black.png');
-        this.load.image('instructionsMenu', 'assets/instructionsMenu.png');
+        this.load.image('instructionsMenu', 'assets/pics/instructionsMenu.png');
 
         // Load the background sound clip
         this.load.audio('trumpSaysChina', 'assets/sounds/trumpSaysChina.mp3');
