@@ -449,30 +449,10 @@ Game.prototype = {
         this.powerupSoundPlaying = false;
     },
 
-    getPotentialMoves: function(tile){
-
-        var validMoves = [];
-
-        if(this.anyMatches(this.map.getTileLeft(this.layer.index, tile.x, tile.y), this.safetiles)){
-            validMoves.push(this.map.getTileLeft(this.layer.index, tile.x, tile.y))
-        }
-        if(this.anyMatches(this.map.getTileRight(this.layer.index, tile.x, tile.y), this.safetiles)){
-            validMoves.push(this.map.getTileRight(this.layer.index, tile.x, tile.y))
-        }
-        if(this.anyMatches(this.map.getTileAbove(this.layer.index, tile.x, tile.y), this.safetiles)){
-            validMoves.push(this.map.getTileAbove(this.layer.index, tile.x, tile.y))
-        }
-        if(this.anyMatches(this.map.getTileBelow(this.layer.index, tile.x, tile.y), this.safetiles)){
-            validMoves.push(this.map.getTileBelow(this.layer.index, tile.x, tile.y))
-        }
-
-        return validMoves;
-    },
-
     recursiveDrawPoints: function(tile, level){
 
         // Max recursion level
-        if(level > 3) return;
+        if(level > 10) return;
 
         // Get all the surrounding tiles
         var tiles = [];
@@ -500,15 +480,11 @@ Game.prototype = {
 
                             // Assign the smaller point value
                             this.pathPoints[tile1Dindex] = level;
-                            game.debug.text(this.pathPoints[tile1Dindex], tiles[x].x * this.gridsize + this.gridsize / 2, tiles[x].y * this.gridsize + this.gridsize / 2);
                         }
                     }
                     else {
                         this.pathPoints[tile1Dindex] = level;
-                        game.debug.text(this.pathPoints[tile1Dindex], tiles[x].x * this.gridsize + this.gridsize / 2, tiles[x].y * this.gridsize + this.gridsize / 2);
                     }
-
-
                     this.recursiveDrawPoints(tiles[x], level + 1);
                 }
             }
@@ -519,16 +495,10 @@ Game.prototype = {
 
         this.pathPoints = [];
         this.recursiveDrawPoints(this.marker, 1);
-
-        /*for(var y = 0; y < this.map.height; ++y) {
-            for (var x = 0; x < this.map.width; ++x) {
-                var tile = this.map.getTile(x, y);
-                if(this.anyMatches(tile.index, this.safetiles)){
-
-                    game.debug.text("0", tile.x * this.gridsize+ this.gridsize/2, tile.y * this.gridsize + this.gridsize/2);
-                }
-            }
-        }*/
+        for(var x = 0; x < this.pathPoints.length; x++){
+            if(this.pathPoints[x])
+                game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x/this.map.width) * this.gridsize + this.gridsize / 2);
+        }
 
         //  Un-comment this to see the debug drawing
 

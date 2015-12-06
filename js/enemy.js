@@ -17,6 +17,7 @@ function Enemy(){
     this.turnPoint = new Phaser.Point();
     this.directions = [ null, null, null, null, null ];
     this.opposites = [ Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP ];
+    this.currentTileScore = 100;
 };
 
 Enemy.prototype = {
@@ -60,7 +61,22 @@ Enemy.prototype = {
         this.directions[3] = this.gameRef.map.getTileAbove(this.gameRef.layer.index, this.marker.x, this.marker.y);
         this.directions[4] = this.gameRef.map.getTileBelow(this.gameRef.layer.index, this.marker.x, this.marker.y);
 
-        if(this.gameRef.anyMatches(this.directions[2].index, this.gameRef.safetiles)) this.move(Phaser.RIGHT);
+        var potentialMovePoints = [];
+        if(this.directions[1]) potentialMovePoints[Phaser.LEFT] = this.gameRef.pathPoints[this.directions[1].y * this.gameRef.map.width + this.directions[1].x] || 100;
+        if(this.directions[2]) potentialMovePoints[Phaser.RIGHT] = this.gameRef.pathPoints[this.directions[2].y * this.gameRef.map.width + this.directions[2].x] || 100;
+        if(this.directions[3]) potentialMovePoints[Phaser.UP] = this.gameRef.pathPoints[this.directions[3].y * this.gameRef.map.width + this.directions[3].x] || 100;
+        if(this.directions[4]) potentialMovePoints[Phaser.DOWN] = this.gameRef.pathPoints[this.directions[4].y * this.gameRef.map.width + this.directions[4].x] || 100;
+
+        var bestMove = 0;
+        var value = potentialMovePoints[1];
+        for (var i = 2; i < potentialMovePoints.length; i++) {
+            if (potentialMovePoints[i] < value) {
+                value = potentialMovePoints[i];
+                bestMove = i;
+            }
+        }
+
+        this.move(bestMove);
 
     },
 
