@@ -111,7 +111,7 @@ Game.prototype = {
         this.trump.animations.add('right', [2,3]);
         this.trump.animations.play('down', 4, true);
 
-        this.enemy.create(this);
+        this.enemy.create();
 
         this.physics.arcade.enable(this.trump);
 
