@@ -11,7 +11,7 @@ var Game = function (game) {
     this.livesText = null;
     this.livesImages = [];
 
-    this.trump = {};
+    this.player = new Player()
     this.enemy = new Enemy();
 
     this.winText = '';
@@ -33,19 +33,6 @@ var Game = function (game) {
     this.gridsize = 64;
     this.pathPoints = [];
 
-    this.speed = 150;
-    this.threshold = 3;
-    this.turnSpeed = 150;
-
-    this.marker = new Phaser.Point();
-    this.turnPoint = new Phaser.Point();
-
-    this.directions = [ null, null, null, null, null ];
-    this.opposites = [ Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP ];
-
-    this.current = Phaser.UP;
-    this.turning = Phaser.NONE;
-
     this.levels = ['assets/levels/iowa.json',
         'assets/levels/newHampshire.json',
         'assets/levels/southCarolina.json',
@@ -57,16 +44,15 @@ var Game = function (game) {
 Game.prototype = {
 
     init: function () {
-
+        // Initialize the physics engine
         this.physics.startSystem(Phaser.Physics.ARCADE);
     },
 
     preload: function () {
 
-
-        // Load trump sprite
-
-        this.load.spritesheet('trump', 'assets/sprites/trump.png', 64, 64, 4);
+        // Preload the player
+        this.player.preload(this);
+        // Preload the enemy
         this.enemy.preload(this);
 
         // Load Steak and Duck pictures
@@ -96,24 +82,13 @@ Game.prototype = {
 
     create: function () {
 
-
-
         this.map = game.add.tilemap('iowa');
         this.map.addTilesetImage('IowaTiles', 'tiles');
-
-        this.layer = this.map.createLayer('Iowa');
-
+        this.layer = this.map.createLayer('Ground');
         this.map.setCollisionByExclusion([12,36,37], true, this.layer);
 
-        this.trump = this.add.sprite(96, 416, 'trump');
-        this.trump.anchor.set(0.5);
-        this.trump.animations.add('down', [0,1]);
-        this.trump.animations.add('right', [2,3]);
-        this.trump.animations.play('down', 4, true);
-
+        this.player.create();
         this.enemy.create();
-
-        this.physics.arcade.enable(this.trump);
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -185,34 +160,6 @@ Game.prototype = {
             this.powerupSounds[x].onStop.add(this.powerupSoundStopped, this);
         }
 
-        //this.move(Phaser.DOWN);
-
-    },
-
-    checkKeys: function () {
-
-        if (this.cursors.left.isDown && this.current !== Phaser.LEFT)
-        {
-            this.checkDirection(Phaser.LEFT);
-        }
-        else if (this.cursors.right.isDown && this.current !== Phaser.RIGHT)
-        {
-            this.checkDirection(Phaser.RIGHT);
-        }
-        else if (this.cursors.up.isDown && this.current !== Phaser.UP)
-        {
-            this.checkDirection(Phaser.UP);
-        }
-        else if (this.cursors.down.isDown && this.current !== Phaser.DOWN)
-        {
-            this.checkDirection(Phaser.DOWN);
-        }
-        else
-        {
-            //  This forces them to hold the key down to turn the corner
-            this.turning = Phaser.NONE;
-        }
-
     },
 
     anyMatches: function(value, array){
@@ -223,84 +170,6 @@ Game.prototype = {
         return false;
     },
 
-    checkDirection: function (turnTo) {
-
-        if (this.turning === turnTo || this.directions[turnTo] === null )
-        {
-            //  Invalid direction if they're already set to turn that way
-            //  Or there is no tile there, or the tile isn't index a floor tile
-            return;
-        }
-
-        if(this.directions[turnTo]){
-            if(!this.anyMatches(this.directions[turnTo].index, this.safetiles)){
-                return;
-            }
-        }
-
-        //  Check if they want to turn around and can
-        if (this.current === this.opposites[turnTo])
-        {
-            this.move(turnTo);
-        }
-        else
-        {
-            this.turning = turnTo;
-
-
-            this.turnPoint.x = (this.marker.x * this.gridsize) + (this.gridsize / 2);
-            this.turnPoint.y = (this.marker.y * this.gridsize) + (this.gridsize / 2);
-        }
-
-    },
-
-    turn: function () {
-
-        var cx = Math.floor(this.trump.x);
-        var cy = Math.floor(this.trump.y);
-
-        //  This needs a threshold, because at high speeds you can't turn because the coordinates skip past
-        if (!this.math.fuzzyEqual(cx, this.turnPoint.x, this.threshold) || !this.math.fuzzyEqual(cy, this.turnPoint.y, this.threshold))
-        {
-            return false;
-        }
-
-        this.trump.x = this.turnPoint.x;
-        this.trump.y = this.turnPoint.y;
-
-        this.trump.body.reset(this.turnPoint.x, this.turnPoint.y);
-
-        this.move(this.turning);
-
-        this.turning = Phaser.NONE;
-
-        return true;
-
-    },
-
-    move: function (direction) {
-
-        var speed = this.speed;
-
-        if (direction === Phaser.LEFT || direction === Phaser.UP)
-        {
-            speed = -speed;
-        }
-
-        if (direction === Phaser.LEFT || direction === Phaser.RIGHT)
-        {
-            this.trump.body.velocity.x = speed;
-        }
-        else
-        {
-            this.trump.body.velocity.y = speed;
-        }
-
-        //this.add.tween(this.trump).to( { angle: this.getAngle(direction) }, this.turnSpeed, "Linear", true);
-
-        this.current = direction;
-
-    },
 
     getAngle: function (to) {
 
@@ -326,8 +195,6 @@ Game.prototype = {
 
         if(!this.loadingNextLevel) {
 
-
-
             // Check if the player ate all the steaks (WIN)
             if (this.steaks.length == 0) {
                 this.loadingNextLevel = true;
@@ -341,52 +208,18 @@ Game.prototype = {
                 loadTween.onComplete.add(this.loadNextLevel, this);
             }
 
-            // Perform collisions between player and level
-            this.physics.arcade.collide(this.trump, this.layer);
-
             if(this.powerupMode) {
-                this.applySpecialEffects();
+                //this.applySpecialEffects();
             }
 
-            // Wrap the player if they walk off the edge
-            if(this.trump.x < -this.gridsize){
-                this.trump.x = game.width + this.gridsize/2;
-            }
-            if(this.trump.x > game.width + this.gridsize/2){
-                this.trump.x = -this.gridsize;
-            }
-            if(this.trump.y < -this.gridsize){
-                this.trump.y = game.height + this.gridsize/2;
-            }
-            if(this.trump.y > game.height + this.gridsize/2){
-                this.trump.y = -this.gridsize;
-            }
-
-            // Create a marker where the player is (for determining ability to turn)
-            this.marker.x = this.math.snapToFloor(Math.floor(this.trump.x), this.gridsize) / this.gridsize;
-            this.marker.y = this.math.snapToFloor(Math.floor(this.trump.y), this.gridsize) / this.gridsize;
-
-            //  Update our grid sensors - places the tile index in the array
-            this.directions[1] = this.map.getTileLeft(this.layer.index, this.marker.x, this.marker.y);
-            this.directions[2] = this.map.getTileRight(this.layer.index, this.marker.x, this.marker.y);
-            this.directions[3] = this.map.getTileAbove(this.layer.index, this.marker.x, this.marker.y);
-            this.directions[4] = this.map.getTileBelow(this.layer.index, this.marker.x, this.marker.y);
-
-            // Update based on input
-            this.checkKeys();
-
-            // If turning, then turn the player
-            if (this.turning !== Phaser.NONE) {
-                this.turn();
-            }
-
-            this.enemy.update()
+            this.player.update();
+            this.enemy.update();
 
             // Go through each steak
             for (var x = 0; x < this.steaks.length; x++) {
                 // If there is a collision with trump
                 var steakToEat = this.steaks[x];
-                if (Phaser.Rectangle.intersects(this.trump, steakToEat)) {
+                if (Phaser.Rectangle.intersects(this.player.sprite, steakToEat)) {
                     if (!this.powerupSoundPlaying) {
                         this.eatSteakSound.play();
                     }
@@ -404,7 +237,7 @@ Game.prototype = {
             for (var x = 0; x < this.powerups.length; x++) {
                 // If there is a collision with trump
                 var powerupToEat = this.powerups[x];
-                if (Phaser.Rectangle.intersects(this.trump, powerupToEat)) {
+                if (Phaser.Rectangle.intersects(this.player.sprite, powerupToEat)) {
 
                     // Enter powerup mode
                     this.startPowerupMode();
@@ -419,10 +252,68 @@ Game.prototype = {
         }
     },
 
-    applySpecialEffects: function(){
 
-        this.trump.tint = Math.random() * 0xffffff;
-        game.world.tint = Math.random() * 0xffffff;
+
+    recursiveDrawPoints: function(tile, level, max){
+
+        // Max recursion level
+        if(level > max) return;
+
+        if(level == 0){
+            this.pathPoints[tile.y * this.map.width + tile.x] = level;
+            level++;
+        }
+
+        // Get all the surrounding tiles
+        var tiles = [];
+        tiles[0] = this.map.getTileLeft(this.layer.index, tile.x, tile.y);
+        tiles[1] = this.map.getTileRight(this.layer.index, tile.x, tile.y);
+        tiles[2] = this.map.getTileAbove(this.layer.index, tile.x, tile.y);
+        tiles[3] = this.map.getTileBelow(this.layer.index, tile.x, tile.y);
+
+        // Go through each surrounding tile
+        for(var x = 0; x < 4; x++)
+        {
+            // If the tile exists and is not the player tile
+            if (tiles[x] && !(tiles[x].x == this.player.marker.x && tiles[x].y == this.player.marker.y)) {
+                // Calculate the 1 dimensional position of the tile
+                var tile1Dindex = tiles[x].y * this.map.width + tiles[x].x;
+
+                // If the tile is a path tile (not a wall)
+                if (this.anyMatches(tiles[x].index, this.safetiles)) {
+
+                    // If this tile has already been assigned a point
+                    if(this.pathPoints[tile1Dindex]){
+
+                        // If this path calculation is shorter
+                        if(level < this.pathPoints[tile1Dindex]){
+
+                            // Assign the smaller point value
+                            this.pathPoints[tile1Dindex] = level;
+                        }
+                    }
+                    else {
+                        this.pathPoints[tile1Dindex] = level;
+                    }
+                    this.recursiveDrawPoints(tiles[x], level + 1, 10);
+                }
+            }
+        }
+    },
+
+    render: function () {
+
+        this.pathPoints = [];
+        this.recursiveDrawPoints(this.player.marker, 0, 10);
+        for(var x = 0; x < this.pathPoints.length; x++){
+            if(this.pathPoints[x] >= 0)
+                game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x/this.map.width) * this.gridsize + this.gridsize / 2);
+        }
+
+    },
+
+    loadNextLevel: function(){
+        game.state.start('LoadNextLevel');
     },
 
     startPowerupMode: function(){
@@ -446,88 +337,5 @@ Game.prototype = {
 
     powerupSoundStopped: function(){
         this.powerupSoundPlaying = false;
-    },
-
-    recursiveDrawPoints: function(tile, level){
-
-        // Max recursion level
-        if(level > 10) return;
-
-        // Get all the surrounding tiles
-        var tiles = [];
-        tiles[0] = this.map.getTileLeft(this.layer.index, tile.x, tile.y);
-        tiles[1] = this.map.getTileRight(this.layer.index, tile.x, tile.y);
-        tiles[2] = this.map.getTileAbove(this.layer.index, tile.x, tile.y);
-        tiles[3] = this.map.getTileBelow(this.layer.index, tile.x, tile.y);
-
-        // Go through each surrounding tile
-        for(var x = 0; x < 4; x++)
-        {
-            // If the tile exists and is not the player tile
-            if (tiles[x] && !(tiles[x].x == this.marker.x && tiles[x].y == this.marker.y)) {
-                // Calculate the 1 dimensional position of the tile
-                var tile1Dindex = tiles[x].y * this.map.width + tiles[x].x;
-
-                // If the tile is a path tile (not a wall)
-                if (this.anyMatches(tiles[x].index, this.safetiles)) {
-
-                    // If this tile has already been assigned a point
-                    if(this.pathPoints[tile1Dindex]){
-
-                        // If this path calculation is shorter
-                        if(level < this.pathPoints[tile1Dindex]){
-
-                            // Assign the smaller point value
-                            this.pathPoints[tile1Dindex] = level;
-                        }
-                    }
-                    else {
-                        this.pathPoints[tile1Dindex] = level;
-                    }
-                    this.recursiveDrawPoints(tiles[x], level + 1);
-                }
-            }
-        }
-    },
-
-    render: function () {
-
-        this.pathPoints = [];
-        this.recursiveDrawPoints(this.marker, 1);
-        for(var x = 0; x < this.pathPoints.length; x++){
-            if(this.pathPoints[x])
-                game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x/this.map.width) * this.gridsize + this.gridsize / 2);
-        }
-
-        //  Un-comment this to see the debug drawing
-
-/*        for (var t = 1; t < 5; t++)
-         {
-         if (this.directions[t] === null)
-         {
-         continue;
-         }
-
-         var color = 'rgba(0,255,0,0.3)';
-
-         if (!this.anyMatches(this.directions[t].index, this.safetiles))
-         {
-         color = 'rgba(255,0,0,0.3)';
-         }
-
-         if (t === this.current)
-         {
-         color = 'rgba(255,255,255,0.3)';
-         }
-
-         this.game.debug.geom(new Phaser.Rectangle(this.directions[t].worldX, this.directions[t].worldY, 32, 32), color, true);
-         }
-
-         this.game.debug.geom(this.turnPoint, '#ffff00');*/
-
-    },
-
-    loadNextLevel: function(){
-        game.state.start('LoadNextLevel');
     }
 };

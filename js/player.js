@@ -1,15 +1,9 @@
 /**
  * Created by Matthew on 12/5/2015.
  */
-AI = {
-    CHASE: 0,
-    SCATTER: 1,
-    FRIGHTENED: 2
-};
 
-function Enemy() {
+function Player() {
 
-    this.ai = AI.SCATTER;
     this.current = Phaser.NONE;
     this.currentTileScore = 100;
     this.delay = 0;
@@ -26,30 +20,25 @@ function Enemy() {
 
 };
 
-Enemy.prototype = {
+Player.prototype = {
 
     preload: function (gameRef) {
 
         // Get a permanent reference to the game
         this.gameRef = gameRef;
 
-        // Load the sprite sheet for the bad guy
-        this.gameRef.load.spritesheet('enemy', 'assets/sprites/pacmansprites.png', 32, 32, 64);
+        // Load trump sprite sheet
+        this.gameRef.load.spritesheet('trump', 'assets/sprites/trump.png', 64, 64, 4);
 
     },
 
     create: function () {
 
-        // Create the enemy sprite
-        this.sprite = this.gameRef.add.sprite(96, 96, 'enemy');
+        this.sprite = this.gameRef.add.sprite(96, 416, 'trump');
         this.sprite.anchor.set(0.5);
-        this.sprite.scale.setTo(2, 2);
-
-        // Create all the animations
-        this.sprite.animations.add('right', [22, 23]);
-        this.sprite.animations.add('left', [20, 21]);
-        this.sprite.animations.add('up', [16, 17]);
-        this.sprite.animations.add('down', [18, 19]);
+        this.sprite.animations.add('down', [0,1]);
+        this.sprite.animations.add('right', [2,3]);
+        this.sprite.animations.play('down', 4, true);
 
         // Enable physics for the enemy
         this.gameRef.physics.arcade.enable(this.sprite);
@@ -75,62 +64,22 @@ Enemy.prototype = {
             this.sprite.y = -this.gameRef.gridsize;
         }
 
-        // Determine the best direction to move
-        this.calculateNextMove();
-
-        // If turning, then turn the enemy
-        if (this.turning !== Phaser.NONE) {
-            this.turn();
-        }
-
-        // Update the animations
-        if(this.current == 1) this.sprite.animations.play('left', 4, true);
-        if(this.current == 2) this.sprite.animations.play('right', 4, true);
-        if(this.current == 3) this.sprite.animations.play('up', 4, true);
-        if(this.current == 4) this.sprite.animations.play('down', 4, true);
-
-    },
-
-    calculateNextMove: function(){
-
-        // Set the marker to the tile that the enemy falls within
+        // Create a marker where the player is (for determining ability to turn)
         this.marker.x = this.gameRef.math.snapToFloor(Math.floor(this.sprite.x), this.gameRef.gridsize) / this.gameRef.gridsize;
         this.marker.y = this.gameRef.math.snapToFloor(Math.floor(this.sprite.y), this.gameRef.gridsize) / this.gameRef.gridsize;
 
-        // Get the 4 potential tiles around the enemy
+        //  Update our grid sensors - places the tile index in the array
         this.directions[1] = this.gameRef.map.getTileLeft(this.gameRef.layer.index, this.marker.x, this.marker.y);
         this.directions[2] = this.gameRef.map.getTileRight(this.gameRef.layer.index, this.marker.x, this.marker.y);
         this.directions[3] = this.gameRef.map.getTileAbove(this.gameRef.layer.index, this.marker.x, this.marker.y);
         this.directions[4] = this.gameRef.map.getTileBelow(this.gameRef.layer.index, this.marker.x, this.marker.y);
 
-        // Create an array of valid directions to move
-        // If the tile from above is not null (if its not a floor/path tile it will be undefined) assign it the tile's pathfinding score
-        var potentialMovePoints = [];
-        if (this.directions[1]) potentialMovePoints[Phaser.LEFT] = this.gameRef.pathPoints[this.directions[1].y * this.gameRef.map.width + this.directions[1].x];
-        if (this.directions[2]) potentialMovePoints[Phaser.RIGHT] = this.gameRef.pathPoints[this.directions[2].y * this.gameRef.map.width + this.directions[2].x];
-        if (this.directions[3]) potentialMovePoints[Phaser.UP] = this.gameRef.pathPoints[this.directions[3].y * this.gameRef.map.width + this.directions[3].x];
-        if (this.directions[4]) potentialMovePoints[Phaser.DOWN] = this.gameRef.pathPoints[this.directions[4].y * this.gameRef.map.width + this.directions[4].x];
+        // Update based on input
+        this.checkKeys();
 
-        // Get the lowest pathfinding score of all the enemies potential moves. The lowest number is the shortest path to the player
-        var bestMove = 0;
-        var value = 100;
-        for (var i = 1; i < potentialMovePoints.length; i++) {
-            if (potentialMovePoints[i] >= 0) {
-
-                if (potentialMovePoints[i] < value) {
-                    value = potentialMovePoints[i];
-                    bestMove = i;
-                }
-            }
-        }
-
-        // If the best move is different than the current direction and not equal to 0 (0 occurs when the enemy is not near a scored tile)
-        if (this.current !== bestMove && bestMove !== 0) {
-            this.checkDirection(bestMove);
-        }
-        // If there is no better move than set turning to NONE
-        else {
-            this.turning = Phaser.NONE;
+        // If turning, then turn the player
+        if (this.turning !== Phaser.NONE) {
+            this.turn();
         }
 
     },
@@ -214,7 +163,36 @@ Enemy.prototype = {
         // Set the current direction to the moved direction
         this.current = direction;
 
-    }
+    },
 
+    checkKeys: function () {
+
+        if (this.gameRef.cursors.left.isDown && this.current !== Phaser.LEFT)
+        {
+            this.checkDirection(Phaser.LEFT);
+            console.log("Pressed Left");
+        }
+        else if (this.gameRef.cursors.right.isDown && this.current !== Phaser.RIGHT)
+        {
+            this.checkDirection(Phaser.RIGHT);
+            console.log("Pressed Right");
+        }
+        else if (this.gameRef.cursors.up.isDown && this.current !== Phaser.UP)
+        {
+            this.checkDirection(Phaser.UP);
+            console.log("Pressed Up");
+        }
+        else if (this.gameRef.cursors.down.isDown && this.current !== Phaser.DOWN)
+        {
+            this.checkDirection(Phaser.DOWN);
+            console.log("Pressed Down");
+        }
+        else
+        {
+            //  This forces them to hold the key down to turn the corner
+            this.turning = Phaser.NONE;
+        }
+
+    }
 
 };
