@@ -321,6 +321,8 @@ Game.prototype = {
         // Set the powerupMode flag
         this.powerupMode = true;
 
+        this.player.activatePowerupMode();
+
         // Play a random powerup sound
         this.powerupSounds[Math.floor((Math.random() * 4))].play();
         this.powerupSoundPlaying = true;

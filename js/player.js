@@ -11,6 +11,7 @@ function Player() {
     this.gameRef = {};
     this.marker = new Phaser.Point();
     this.opposites = [Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP];
+    this.powerupMode = false;
     this.speed = 200;
     this.sprite = {};
     this.target = {};
@@ -22,13 +23,71 @@ function Player() {
 
 Player.prototype = {
 
-    preload: function (gameRef) {
+    activatePowerupMode: function(){
+        this.powerupMode = true;
+    },
 
-        // Get a permanent reference to the game
-        this.gameRef = gameRef;
+    applyPowerupEffects: function(){
+        this.sprite.tint = Math.random() * 0xffffff;
+    },
 
-        // Load trump sprite sheet
-        this.gameRef.load.spritesheet('trump', 'assets/sprites/trump.png', 64, 64, 4);
+    deActivatePowerupMode: function(){
+        this.powerupMode = false;
+    },
+
+    checkDirection: function (turnTo) {
+
+        if (this.turning === turnTo || this.directions[turnTo] === null) {
+            //  Invalid direction if they're already set to turn that way
+            //  Or there is no tile there, or the tile isn't index a floor tile
+            return;
+        }
+
+        // Verify that the tile the enemy is trying to turn to is a path tile, otherwise return
+        if (this.directions[turnTo]) {
+            if (!this.gameRef.anyMatches(this.directions[turnTo].index, this.gameRef.safetiles)) {
+                return;
+            }
+        }
+
+        //  Check if they want to turn around and can
+        if (this.current === this.opposites[turnTo]) {
+            this.move(turnTo);
+        }
+        // Otherwise mark the enemy to turn in the requested direction
+        else {
+            this.turning = turnTo;
+
+            // Set the turn point
+            this.turnPoint.x = (this.marker.x * this.gameRef.gridsize) + (this.gameRef.gridsize / 2);
+            this.turnPoint.y = (this.marker.y * this.gameRef.gridsize) + (this.gameRef.gridsize / 2);
+        }
+
+    },
+
+    checkKeys: function () {
+
+        if (this.gameRef.cursors.left.isDown && this.current !== Phaser.LEFT)
+        {
+            this.checkDirection(Phaser.LEFT);
+        }
+        else if (this.gameRef.cursors.right.isDown && this.current !== Phaser.RIGHT)
+        {
+            this.checkDirection(Phaser.RIGHT);
+        }
+        else if (this.gameRef.cursors.up.isDown && this.current !== Phaser.UP)
+        {
+            this.checkDirection(Phaser.UP);
+        }
+        else if (this.gameRef.cursors.down.isDown && this.current !== Phaser.DOWN)
+        {
+            this.checkDirection(Phaser.DOWN);
+        }
+        else
+        {
+            //  This forces them to hold the key down to turn the corner
+            this.turning = Phaser.NONE;
+        }
 
     },
 
@@ -45,10 +104,75 @@ Player.prototype = {
 
     },
 
+    move: function (direction) {
+
+        // Create a temp var to hold the speed
+        var speed = this.speed;
+
+        // If going left or up, negate the speed
+        if (direction === Phaser.LEFT || direction === Phaser.UP) {
+            speed = -speed;
+        }
+
+        // Update if x-axis movement
+        if (direction === Phaser.LEFT || direction === Phaser.RIGHT) {
+            this.sprite.body.velocity.x = speed;
+        }
+        // Otherwise, update y-axis movement
+        else {
+            this.sprite.body.velocity.y = speed;
+        }
+
+        // Set the current direction to the moved direction
+        this.current = direction;
+
+    },
+
+    preload: function (gameRef) {
+
+        // Get a permanent reference to the game
+        this.gameRef = gameRef;
+
+        // Load trump sprite sheet
+        this.gameRef.load.spritesheet('trump', 'assets/sprites/trump.png', 64, 64, 4);
+
+    },
+
+    turn: function () {
+
+        // Get the coordinates of the enemy
+        var cx = Math.floor(this.sprite.x);
+        var cy = Math.floor(this.sprite.y);
+
+        //  Dont let the player turn until they are at the center of the tile. We use fuzzyEqual to allow an imperfect match to account for decimals in physics calcs
+        if (!this.gameRef.math.fuzzyEqual(cx, this.turnPoint.x, this.threshold) || !this.gameRef.math.fuzzyEqual(cy, this.turnPoint.y, this.threshold)) {
+            return false;
+        }
+
+        // Set the sprite to the center of the tile they are turning on
+        this.sprite.x = this.turnPoint.x;
+        this.sprite.y = this.turnPoint.y;
+        this.sprite.body.reset(this.turnPoint.x, this.turnPoint.y);
+
+        // Move the enemy in the new direction
+        this.move(this.turning);
+
+        // Reset turning now that we are finished turning
+        this.turning = Phaser.NONE;
+
+        // Return a successful turn attempt
+        return true;
+
+    },
+
     update: function () {
 
         // Perform collisions between player and level
         this.gameRef.physics.arcade.collide(this.sprite, this.gameRef.layer);
+
+        if(this.powerupMode){
+            this.applyPowerupEffects();
+        }
 
         // Wrap the player if they walk off the edge
         if(this.sprite.x < -this.gameRef.gridsize){
@@ -83,116 +207,5 @@ Player.prototype = {
         }
 
     },
-
-    checkDirection: function (turnTo) {
-
-        if (this.turning === turnTo || this.directions[turnTo] === null) {
-            //  Invalid direction if they're already set to turn that way
-            //  Or there is no tile there, or the tile isn't index a floor tile
-            return;
-        }
-
-        // Verify that the tile the enemy is trying to turn to is a path tile, otherwise return
-        if (this.directions[turnTo]) {
-            if (!this.gameRef.anyMatches(this.directions[turnTo].index, this.gameRef.safetiles)) {
-                return;
-            }
-        }
-
-        //  Check if they want to turn around and can
-        if (this.current === this.opposites[turnTo]) {
-            this.move(turnTo);
-        }
-        // Otherwise mark the enemy to turn in the requested direction
-        else {
-            this.turning = turnTo;
-
-            // Set the turn point
-            this.turnPoint.x = (this.marker.x * this.gameRef.gridsize) + (this.gameRef.gridsize / 2);
-            this.turnPoint.y = (this.marker.y * this.gameRef.gridsize) + (this.gameRef.gridsize / 2);
-        }
-
-    },
-
-    turn: function () {
-
-        // Get the coordinates of the enemy
-        var cx = Math.floor(this.sprite.x);
-        var cy = Math.floor(this.sprite.y);
-
-        //  Dont let the player turn until they are at the center of the tile. We use fuzzyEqual to allow an imperfect match to account for decimals in physics calcs
-        if (!this.gameRef.math.fuzzyEqual(cx, this.turnPoint.x, this.threshold) || !this.gameRef.math.fuzzyEqual(cy, this.turnPoint.y, this.threshold)) {
-            return false;
-        }
-
-        // Set the sprite to the center of the tile they are turning on
-        this.sprite.x = this.turnPoint.x;
-        this.sprite.y = this.turnPoint.y;
-        this.sprite.body.reset(this.turnPoint.x, this.turnPoint.y);
-
-        // Move the enemy in the new direction
-        this.move(this.turning);
-
-        // Reset turning now that we are finished turning
-        this.turning = Phaser.NONE;
-
-        // Return a successful turn attempt
-        return true;
-
-    },
-
-    move: function (direction) {
-
-        // Create a temp var to hold the speed
-        var speed = this.speed;
-
-        // If going left or up, negate the speed
-        if (direction === Phaser.LEFT || direction === Phaser.UP) {
-            speed = -speed;
-        }
-
-        // Update if x-axis movement
-        if (direction === Phaser.LEFT || direction === Phaser.RIGHT) {
-            this.sprite.body.velocity.x = speed;
-        }
-        // Otherwise, update y-axis movement
-        else {
-            this.sprite.body.velocity.y = speed;
-        }
-
-        // Set the current direction to the moved direction
-        this.current = direction;
-
-    },
-
-    checkKeys: function () {
-
-        if (this.gameRef.cursors.left.isDown && this.current !== Phaser.LEFT)
-        {
-            this.checkDirection(Phaser.LEFT);
-            console.log("Pressed Left");
-        }
-        else if (this.gameRef.cursors.right.isDown && this.current !== Phaser.RIGHT)
-        {
-            this.checkDirection(Phaser.RIGHT);
-            console.log("Pressed Right");
-        }
-        else if (this.gameRef.cursors.up.isDown && this.current !== Phaser.UP)
-        {
-            this.checkDirection(Phaser.UP);
-            console.log("Pressed Up");
-        }
-        else if (this.gameRef.cursors.down.isDown && this.current !== Phaser.DOWN)
-        {
-            this.checkDirection(Phaser.DOWN);
-            console.log("Pressed Down");
-        }
-        else
-        {
-            //  This forces them to hold the key down to turn the corner
-            this.turning = Phaser.NONE;
-        }
-
-    }
 
 };
