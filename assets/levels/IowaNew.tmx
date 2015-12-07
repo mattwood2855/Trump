@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="19" height="12" tilewidth="64" tileheight="64" nextobjectid="1">
+ <tileset firstgid="1" name="iowasky" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="iowasky.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="2" name="iowasun2" tilewidth="64" tileheight="64" tilecount="16">
+  <image source="iowasun2.jpg" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="18" name="RockPath1" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="RockPath1.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="19" name="cloudTile" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="cloudTile.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="20" name="columntop" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="columntop.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="21" name="Iowa1" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="Iowa1.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="22" name="columnbottom" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="columnbottom.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="23" name="iowasun4" tilewidth="64" tileheight="64" tilecount="16">
+  <image source="iowasun4.jpg" width="256" height="256"/>
+ </tileset>
+ <tileset firstgid="39" name="columnmiddle" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="columnmiddle.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="40" name="PicketFence" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="PicketFence.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="41" name="columnmiddle2" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="columnmiddle2.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="42" name="iowa3" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="iowa3.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="43" name="iowaflower" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="iowaflower.jpg" width="64" height="64"/>
+ </tileset>
+ <tileset firstgid="44" name="corntile" tilewidth="64" tileheight="64" tilecount="2">
+  <image source="../corntile.jpg" width="64" height="128"/>
+ </tileset>
+ <tileset firstgid="46" name="cowtile" tilewidth="64" tileheight="64" tilecount="1">
+  <image source="../cowtile.jpg" width="64" height="64"/>
+ </tileset>
+ <layer name="Tile Layer 1" width="19" height="12">
+  <data encoding="csv">
+20,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,20,
+41,42,19,18,18,18,18,18,19,18,19,19,19,19,19,18,19,42,41,
+41,42,1,18,1,18,1,1,1,18,18,1,18,1,1,18,1,42,41,
+18,18,18,18,1,18,18,18,24,25,18,18,18,1,18,18,18,18,18,
+41,42,1,18,1,1,1,18,18,18,18,1,18,1,18,1,18,42,41,
+41,42,18,18,18,18,18,18,32,33,34,1,18,18,18,44,44,42,41,
+41,42,1,18,1,18,1,18,36,37,18,1,18,1,18,45,45,42,41,
+18,18,18,18,18,18,1,18,18,18,18,18,18,44,18,18,18,18,18,
+41,42,21,18,21,18,46,21,21,21,18,21,18,45,18,21,18,42,41,
+41,42,46,43,43,43,43,43,43,43,18,43,43,43,43,43,18,42,41,
+41,42,43,43,43,43,43,43,43,43,43,43,43,46,43,43,43,42,41,
+22,42,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,42,22
+</data>
+ </layer>
+</map>

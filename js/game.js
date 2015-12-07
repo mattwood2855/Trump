@@ -163,7 +163,9 @@ Game.prototype = {
         this.livesText.bringToTop();
 
         for (var x = 0; x < game.lives; x++) {
-            this.livesImages.push(this.add.sprite(this.livesText.width + 32 * x, 0, 'trumpLife').scale.set(0.5));
+            var lifeToken = this.add.sprite(this.livesText.width + 32 * x, 0, 'trumpLife');
+            lifeToken.scale.set(0.5);
+            this.livesImages.push(lifeToken);
         }
 
         style = {font: "24px Arial Bold", fill: "#52bace", align: "center"};
@@ -235,8 +237,11 @@ Game.prototype = {
             if(this.everyOther) {
 
                 this.pathPoints = [];
-                for (var x = 0; x < this.map.width * this.map.height; x++) {
-                    this.pathPoints[x] = 20;
+                for(var y = 0; y < this.map.height; y++)
+                for (var x = 0; x < this.map.width; x++) {
+                    if(this.anyMatches(this.map.getTile(x,y).index,this.safetiles)) {
+                        this.pathPoints[this.map.width*y+x] = 20;
+                    }
                 }
                 this.recursiveDrawPoints(this.player.marker, 0, 15);
             }
@@ -279,9 +284,24 @@ Game.prototype = {
                     powerupToEat.destroy();
                 }
             }
+
+            for (var x = 0; x < this.enemies.length; x++){
+                if (Phaser.Rectangle.intersects(this.player.sprite, this.enemies[x].sprite)){
+                    this.killPlayer();
+
+                }
+            }
         }
     },
 
+
+    killPlayer: function(){
+        if(game.lives > 0) {
+            game.lives--;
+            this.livesImages[game.lives].destroy();
+        }
+        
+    },
 
     recursiveDrawPoints: function (tile, level, max) {
 
@@ -331,10 +351,10 @@ Game.prototype = {
 
     render: function () {
 
-        /*for (var x = 0; x < this.pathPoints.length; x++) {
+        for (var x = 0; x < this.pathPoints.length; x++) {
             if (this.pathPoints[x] >= 0)
                 game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x / this.map.width) * this.gridsize + this.gridsize / 2);
-        }*/
+        }
 
     },
 

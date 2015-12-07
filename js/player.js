@@ -14,7 +14,6 @@ function Player() {
     this.powerupMode = false;
     this.speed = 200;
     this.sprite = {};
-    this.target = {};
     this.threshold = 3;
     this.turning = Phaser.NONE;
     this.turnPoint = new Phaser.Point();

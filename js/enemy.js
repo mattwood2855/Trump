@@ -24,7 +24,7 @@ function Enemy() {
     this.marker = new Phaser.Point();
     this.opposites = [Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP];
     this.powerupMode = false;
-    this.speed = 200;
+    this.speed = 175;
     this.sprite = {};
     this.threshold = 3;
     this.turning = Phaser.NONE;
@@ -59,15 +59,30 @@ Enemy.prototype = {
         if (this.directions[3]) potentialMovePoints[Phaser.UP] = this.gameRef.pathPoints[this.directions[3].y * this.gameRef.map.width + this.directions[3].x];
         if (this.directions[4]) potentialMovePoints[Phaser.DOWN] = this.gameRef.pathPoints[this.directions[4].y * this.gameRef.map.width + this.directions[4].x];
 
-        // Get the lowest pathfinding score of all the enemies potential moves. The lowest number is the shortest path to the player
         var bestMove = 0;
-        var value = 100;
-        for (var i = 1; i < potentialMovePoints.length; i++) {
-            if (potentialMovePoints[i] >= 0) {
+        if(this.powerupMode){
+            var value = 0;
+            for (var i = 1; i < potentialMovePoints.length; i++) {
+                if (potentialMovePoints[i] >= 0) {
 
-                if (potentialMovePoints[i] < value) {
-                    value = potentialMovePoints[i];
-                    bestMove = i;
+                    if (potentialMovePoints[i] > value) {
+                        value = potentialMovePoints[i];
+                        bestMove = i;
+                    }
+                }
+            }
+        }
+        // Get the lowest pathfinding score of all the enemies potential moves. The lowest number is the shortest path to the player
+        else {
+
+            var value = 100;
+            for (var i = 1; i < potentialMovePoints.length; i++) {
+                if (potentialMovePoints[i] >= 0) {
+
+                    if (potentialMovePoints[i] < value) {
+                        value = potentialMovePoints[i];
+                        bestMove = i;
+                    }
                 }
             }
         }
