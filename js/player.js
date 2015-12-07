@@ -9,11 +9,14 @@ function Player() {
     this.delay = 0;
     this.directions = [null, null, null, null, null];
     this.gameRef = {};
+    this.lives = 1;
     this.marker = new Phaser.Point();
     this.opposites = [Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP];
     this.powerupMode = false;
     this.speed = 200;
     this.sprite = {};
+    this.startX = 0;
+    this.startY = 0;
     this.threshold = 3;
     this.turning = Phaser.NONE;
     this.turnPoint = new Phaser.Point();
@@ -91,16 +94,32 @@ Player.prototype = {
 
     },
 
-    create: function () {
+    create: function (map) {
 
-        this.sprite = this.gameRef.add.sprite(96, 416, 'trump');
+        this.startX = map.properties.PlayerStartX * map.tileWidth + (map.tileWidth / 2);
+        this.startY = map.properties.PlayerStartY * map.tileHeight + (map.tileHeight / 2);
+        // Create the sprite
+        this.sprite = this.gameRef.add.sprite(this.startX, this.startY , 'trump');
         this.sprite.anchor.set(0.5);
         this.sprite.animations.add('down', [0,1]);
         this.sprite.animations.add('right', [2,3]);
         this.sprite.animations.play('down', 4, true);
 
+        // Define the onKilled event
+        this.sprite.events.onKilled.add(this.onKilled);
+
         // Enable physics for the enemy
         this.gameRef.physics.arcade.enable(this.sprite);
+
+    },
+
+    hit: function(){
+        if(this.lives > 0) {
+            this.lives--;
+        }
+
+        this.sprite.kill();
+        this.sprite.reset(this.startX, this.startY);
 
     },
 
@@ -125,6 +144,10 @@ Player.prototype = {
 
         // Set the current direction to the moved direction
         this.current = direction;
+
+    },
+
+    onKilled: function(){
 
     },
 

@@ -44,8 +44,8 @@ InstructionsMenu.prototype = {
         if(!this.movingSelectors) {
             if (this.selectKey.isDown) {
                 if(this.currentSelection == 0){
-                    this.backgroundSound.stop();
-                    game.state.start('Menu');
+                    game.state.remove('InstructionsMenu');
+                    game.state.add('Menu', Menu, true);
                 }
             }
 

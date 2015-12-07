@@ -4,11 +4,10 @@ var sprite;
 var Game = function (game) {
 
     this.map = null;
+    this.hud = new Hud();
     this.layer = null;
 
-    this.scoreText = null;
-    this.livesText = null;
-    this.livesImages = [];
+
 
     this.player = new Player();
     this.enemies = [];
@@ -59,17 +58,20 @@ Game.prototype = {
 
         // Preload the player
         this.player.preload(this);
-        // Preload the enemy
+
+        // Preload the enemies
         for (var x = 0; x < this.enemies.length; x++) {
             this.enemies[x].preload(this);
         }
+
+        // Preload the HUD
+        this.hud.preload(this);
 
         // Load Steak and Duck pictures
         this.load.image('steak', 'assets/pics/steak.png');
         this.load.image('duck', 'assets/pics/duck.png');
 
-        // Load image for lives
-        this.load.image('trumpLife', 'assets/pics/trumpLife.png');
+
 
         // Load level tilemap
         this.load.tilemap('iowa', 'assets/levels/iowa.json', null, Phaser.Tilemap.TILED_JSON);
@@ -101,12 +103,12 @@ Game.prototype = {
         this.layer = this.map.createLayer('Ground');
         this.map.setCollisionByExclusion([12, 36, 37], true, this.layer);
 
-        this.player.create();
+        this.player.create(this.map);
 
-        this.enemies[0].create(96, 96, EnemyType.RED);
-        this.enemies[1].create(1120, 96, EnemyType.PINK);
-        this.enemies[2].create(96, 672, EnemyType.BLUE);
-        this.enemies[3].create(1120, 672, EnemyType.YELLOW);
+        this.enemies[0].create(this.map, EnemyType.RED);
+        this.enemies[1].create(this.map, EnemyType.PINK);
+        this.enemies[2].create(this.map, EnemyType.BLUE);
+        this.enemies[3].create(this.map, EnemyType.YELLOW);
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -144,6 +146,9 @@ Game.prototype = {
             }
         }
 
+        // Create HUD
+        this.hud.create();
+
         // Create Audio
         this.eatSteakSound = this.add.audio('eatSteak');
         this.powerupSounds.push(this.add.audio('powerup0'));
@@ -158,19 +163,7 @@ Game.prototype = {
 
         game.sound.setDecodedCallback(this.powerupSounds, this.start, this);
 
-        var style = {font: "24px Arial Bold", fill: "#52bace", align: "center"};
-        this.livesText = game.add.text(0, 0, "Lives:", style);
-        this.livesText.bringToTop();
 
-        for (var x = 0; x < game.lives; x++) {
-            var lifeToken = this.add.sprite(this.livesText.width + 32 * x, 0, 'trumpLife');
-            lifeToken.scale.set(0.5);
-            this.livesImages.push(lifeToken);
-        }
-
-        style = {font: "24px Arial Bold", fill: "#52bace", align: "center"};
-        this.scoreText = game.add.text(0, this.livesText.height, "Score: " + game.points.toString(), style);
-        this.scoreText.bringToTop();
 
 
     },
@@ -213,6 +206,14 @@ Game.prototype = {
 
         if (!this.loadingNextLevel) {
 
+            // Check if the player has any lives left
+            if(this.player.lives == 0){
+                game.state.remove('Game');
+                game.state.add('GameOver', GameOver, false);
+                game.state.start('GameOver', true, false, this.hud.points);
+                return;
+            }
+
             // Check if the player ate all the steaks (WIN)
             if (this.steaks.length == 0) {
                 this.loadingNextLevel = true;
@@ -225,6 +226,8 @@ Game.prototype = {
                 var loadTween = this.add.tween(blackScreen).to({alpha: 1}, 1000, Phaser.Easing.Linear.None, true, 0, 0, false);
                 loadTween.onComplete.add(this.loadNextLevel, this);
             }
+
+            this.hud.update();
 
             if (this.powerupMode) {
                 //this.applySpecialEffects();
@@ -258,9 +261,8 @@ Game.prototype = {
                     if (!this.powerupSoundPlaying) {
                         this.eatSteakSound.play();
                     }
-                    // Give the player a point
-                    game.points++;
-                    this.scoreText.setText("Score: " + game.points.toString());
+                    this.hud.addPoint();
+
                     // Remove the steak from the array
                     this.steaks.splice(x, 1);
                     // destroy the steak for garbage collection
@@ -287,8 +289,8 @@ Game.prototype = {
 
             for (var x = 0; x < this.enemies.length; x++){
                 if (Phaser.Rectangle.intersects(this.player.sprite, this.enemies[x].sprite)){
+                    this.enemies[x].killedPlayer = true;
                     this.killPlayer();
-
                 }
             }
         }
@@ -296,11 +298,12 @@ Game.prototype = {
 
 
     killPlayer: function(){
-        if(game.lives > 0) {
-            game.lives--;
-            this.livesImages[game.lives].destroy();
+
+        this.player.hit();
+        for(var x = 0; x < this.enemies.length; x++) {
+            this.enemies[x].sprite.kill();
+            this.enemies[x].sprite.reset(this.map.properties.EnemyStartX * this.map.tileWidth + (this.map.tileWidth / 2), this.map.properties.EnemyStartY * this.map.tileWidth + (this.map.tileWidth / 2));
         }
-        
     },
 
     recursiveDrawPoints: function (tile, level, max) {
@@ -351,11 +354,11 @@ Game.prototype = {
 
     render: function () {
 
-        for (var x = 0; x < this.pathPoints.length; x++) {
+        /*for (var x = 0; x < this.pathPoints.length; x++) {
             if (this.pathPoints[x] >= 0)
                 game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x / this.map.width) * this.gridsize + this.gridsize / 2);
         }
-
+*/
     },
 
     loadNextLevel: function () {

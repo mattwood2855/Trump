@@ -21,6 +21,7 @@ function Enemy() {
     this.delay = 0;
     this.directions = [null, null, null, null, null];
     this.gameRef = {};
+    this.killedPlayer = false;
     this.marker = new Phaser.Point();
     this.opposites = [Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP];
     this.powerupMode = false;
@@ -135,10 +136,10 @@ Enemy.prototype = {
 
     },
 
-    create: function (x,y, enemyType) {
+    create: function (map, enemyType) {
 
         // Create the enemy sprite
-        this.sprite = this.gameRef.add.sprite(x, y, 'enemy');
+        this.sprite = this.gameRef.add.sprite(map.properties.EnemyStartX * map.tileWidth + (map.tileWidth / 2), map.properties.EnemyStartY * map.tileHeight + (map.tileHeight / 2), 'enemy');
         this.sprite.anchor.set(0.5);
         this.sprite.scale.setTo(2, 2);
 

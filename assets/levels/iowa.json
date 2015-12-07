@@ -26,7 +26,10 @@
  "orientation":"orthogonal",
  "properties":
     {
-
+     "EnemyStartX":"9",
+     "EnemyStartY":"10",
+     "PlayerStartX":"9",
+     "PlayerStartY":"3"
     },
  "renderorder":"right-down",
  "tileheight":64,

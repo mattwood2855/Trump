@@ -64,6 +64,9 @@ Menu.prototype = {
         this.donateButton = this.add.sprite(this.donateButtonX, this.donateButtonY, 'donate');
 
         // Add the selector steaks
+        this.currentSelection = 0;
+        this.movingSelectors = false;
+        this.selectorSteaks = [];
         this.selectorSteaks.push(this.add.sprite(this.playButtonX - (this.playButton.width / 2) + 32, this.playButtonY+5, 'steak'));
         this.selectorSteaks.push(this.add.sprite(this.playButtonX + (this.playButton.width / 2) + 108, this.playButtonY+5, 'steak'));
         this.add.tween(this.selectorSteaks[0].scale).to({ x:.85, y:0.85 }, 500, Phaser.Easing.Linear.None, true, 0, -1, true);
@@ -76,7 +79,8 @@ Menu.prototype = {
 
         // Decode the background audio file
         this.backgroundSound = this.add.audio('trumpSaysChina');
-// add select sound
+
+        // add select sound
         this.clickSound = this.add.audio('plop');
         this.clickSound.volume = 0.5;
         game.sound.setDecodedCallback(this.backgroundSound, this.start, this);
@@ -84,39 +88,49 @@ Menu.prototype = {
     },
 
     start: function(){
+
         this.backgroundSound.play();
     },
 
     update: function(){
+
         if(!this.movingSelectors) {
+
+
             if (this.upKey.isDown) {
-                if(this.currentSelection > 0){
+
+
+                if (this.currentSelection > 0) {
                     this.currentSelection--;
                     this.movingSelectors = true;
-                    this.add.tween(this.selectorSteaks[0]).to({y:(this.selectorSteaks[0].y-80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false);
-                    this.add.tween(this.selectorSteaks[1]).to({y:(this.selectorSteaks[0].y-80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false).onComplete.add(this.movingSelectorsStopped, this);
+                    this.add.tween(this.selectorSteaks[0]).to({y: (this.selectorSteaks[0].y - 80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false);
+                    this.add.tween(this.selectorSteaks[1]).to({y: (this.selectorSteaks[0].y - 80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false).onComplete.add(this.movingSelectorsStopped, this);
                     this.clickSound.play();
                 }
             }
             if (this.downKey.isDown) {
-                if(this.currentSelection < 2) {
+                if (this.currentSelection < 2) {
                     this.currentSelection++;
                     this.movingSelectors = true;
-                    this.add.tween(this.selectorSteaks[0]).to({y:(this.selectorSteaks[0].y+80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false);
-                    this.add.tween(this.selectorSteaks[1]).to({y:(this.selectorSteaks[0].y+80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false).onComplete.add(this.movingSelectorsStopped, this);
+                    this.add.tween(this.selectorSteaks[0]).to({y: (this.selectorSteaks[0].y + 80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false);
+                    this.add.tween(this.selectorSteaks[1]).to({y: (this.selectorSteaks[0].y + 80)}, 500, Phaser.Easing.Elastic.Out, true, 0, 0, false).onComplete.add(this.movingSelectorsStopped, this);
                     this.clickSound.play();
                 }
             }
+        }
             if (this.selectKey.isDown) {
                 if(this.currentSelection == 0){
                     this.backgroundSound.stop();
-                    game.state.start('Game');
+                    game.state.remove('Menu');
+                    game.state.add('Game', Game, true);
                 }
             }
             if (this.selectKey.isDown) {
                 if(this.currentSelection == 1){
                     this.backgroundSound.stop();
-                    game.state.start('InstructionsMenu');
+                    game.state.remove('Menu');
+                    game.state.add('InstructionsMenu', InstructionsMenu, true);
+
                 }
             }
             if (this.selectKey.isDown) {
@@ -125,7 +139,7 @@ Menu.prototype = {
                     this.visitPage();
                 }
             }
-        }
+
     },
 
     movingSelectorsStopped: function(){
@@ -133,6 +147,12 @@ Menu.prototype = {
     },
 
     visitPage: function() {
-        window.location='http://www.google.com';
+        window.open('http://www.google.com', '_blank');
+    },
+
+    destroySprites: function(){
+        this.selectorSteaks[0].destroy();
+        this.selectorSteaks[1].destroy();
+        this.selectorSteaks = [];
     }
 };
