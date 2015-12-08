@@ -9,7 +9,7 @@ function Player() {
     this.delay = 0;
     this.directions = [null, null, null, null, null];
     this.gameRef = {};
-    this.lives = 1;
+    this.lives = 3;
     this.marker = new Phaser.Point();
     this.opposites = [Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP];
     this.powerupMode = false;

@@ -3,10 +3,11 @@ var sprite;
 
 var Game = function (game) {
 
+    this.fadingIn = true;
     this.map = null;
     this.hud = new Hud();
     this.layer = null;
-
+    this.fadeSprite = {};
     this.player = new Player();
     this.enemies = [];
     this.enemies[0] = new Enemy();
@@ -25,8 +26,6 @@ var Game = function (game) {
 
     this.powerupMode = false;
     this.warnPowerupModeLength = 3000;
-
-
 
     this.eatSteakSound = null;
     this.powerupSounds = [];
@@ -47,46 +46,12 @@ var Game = function (game) {
 
 Game.prototype = {
 
-    init: function () {
-        // Initialize the physics engine
-        this.physics.startSystem(Phaser.Physics.ARCADE);
-    },
-
-    preload: function () {
-
-        // Preload the player
-        this.player.preload(this);
-
-        // Preload the enemies
-        for (var x = 0; x < this.enemies.length; x++) {
-            this.enemies[x].preload(this);
+    anyMatches: function (value, array) {
+        for (var i = 0; i < array.length; i++) {
+            if (value == array[i])
+                return true;
         }
-
-        // Preload the HUD
-        this.hud.preload(this);
-
-        // Load Steak and Duck pictures
-        this.load.image('powerup', 'assets/pics/steak.png');
-        this.load.image('dots', 'assets/pics/hotdog.png');
-
-
-
-        // Load level tilemap
-        this.load.tilemap('iowa', 'assets/levels/iowa.json', null, Phaser.Tilemap.TILED_JSON);
-        // Load tile sheet
-        this.load.image('tiles', 'assets/tilesets/iowaTiles.png');
-
-        // Load black for tweening between game states
-        this.load.image('blackScreen', 'assets/pics/black.png');
-
-        // Load Sound effects
-        this.load.audio('eatSteak', 'assets/sounds/eatSteak.mp3');
-        this.load.audio('powerup0', 'assets/sounds/powerup0.mp3');
-        this.load.audio('powerup1', 'assets/sounds/powerup1.mp3');
-        this.load.audio('powerup2', 'assets/sounds/powerup2.mp3');
-        this.load.audio('powerup3', 'assets/sounds/powerup3.mp3');
-        this.load.audio('iRun', 'assets/sounds/iRun.mp3');
-
+        return false;
     },
 
     create: function () {
@@ -161,25 +126,16 @@ Game.prototype = {
 
         game.sound.setDecodedCallback(this.powerupSounds, this.start, this);
 
+        this.fadeSprite = game.add.sprite(0, 0, 'blackScreen');
+        this.fadeSprite.width = game.width;
+        this.fadeSprite.height = game.height;
+        this.fadeSprite.alpha = 1;
+        // Add a zoom tween that last forever
+        this.add.tween(this.fadeSprite).to({
+            alpha: 0
+        }, 2000, Phaser.Easing.Linear.None, true).onComplete.add(this.startGame, this);
 
 
-
-    },
-
-    start: function () {
-
-        for (var x = 0; x < this.powerupSounds.length; x++) {
-            this.powerupSounds[x].onStop.add(this.powerupSoundStopped, this);
-        }
-
-    },
-
-    anyMatches: function (value, array) {
-        for (var i = 0; i < array.length; i++) {
-            if (value == array[i])
-                return true;
-        }
-        return false;
     },
 
     getAngle: function (to) {
@@ -200,98 +156,9 @@ Game.prototype = {
 
     },
 
-    update: function () {
-
-        if (!this.loadingNextLevel) {
-
-            // Check if the player has any lives left
-            if(this.player.lives == 0){
-                game.state.remove('Game');
-                game.state.add('GameOver', GameOver, false);
-                game.state.start('GameOver', true, false, this.hud.points);
-                return;
-            }
-
-            // Check if the player ate all the steaks (WIN)
-            if (this.steaks.length == 0) {
-                this.loadingNextLevel = true;
-                this.iRunSound.play();
-                var blackScreen = this.add.sprite(game.width / 2, game.height / 2, 'blackScreen');
-                blackScreen.anchor.set(0.5);
-                blackScreen.scale.setTo(1000, 1000);
-                blackScreen.alpha = 0.0;
-
-                var loadTween = this.add.tween(blackScreen).to({alpha: 1}, 1000, Phaser.Easing.Linear.None, true, 0, 0, false);
-                loadTween.onComplete.add(this.loadNextLevel, this);
-            }
-
-            this.hud.update();
-
-            if (this.powerupMode) {
-                //this.applySpecialEffects();
-            }
-
-            this.player.update();
-
-            // Calculate the pathmap every other update to save cpu
-            this.everyOther = !this.everyOther;
-            if(this.everyOther) {
-
-                this.pathPoints = [];
-                for(var y = 0; y < this.map.height; y++)
-                for (var x = 0; x < this.map.width; x++) {
-                    if(this.anyMatches(this.map.getTile(x,y).index,this.safetiles)) {
-                        this.pathPoints[this.map.width*y+x] = 20;
-                    }
-                }
-                this.recursiveDrawPoints(this.player.marker, 0, 15);
-            }
-
-            for (var x = 0; x < this.enemies.length; x++) {
-                this.enemies[x].update();
-            }
-
-            // Go through each steak
-            for (var x = 0; x < this.steaks.length; x++) {
-                // If there is a collision with trump
-                var steakToEat = this.steaks[x];
-                if (Phaser.Rectangle.intersects(this.player.sprite, steakToEat)) {
-                    if (!this.powerupSoundPlaying) {
-                        this.eatSteakSound.play();
-                    }
-                    this.hud.addPoint();
-
-                    // Remove the steak from the array
-                    this.steaks.splice(x, 1);
-                    // destroy the steak for garbage collection
-                    steakToEat.destroy();
-                }
-            }
-
-            // Go through powerups
-            for (var x = 0; x < this.powerups.length; x++) {
-                // If there is a collision with trump
-                var powerupToEat = this.powerups[x];
-                if (Phaser.Rectangle.intersects(this.player.sprite, powerupToEat)) {
-
-                    // Enter powerup mode
-                    this.startPowerupMode();
-
-                    // Remove the powerup from the array
-                    this.powerups.splice(x, 1);
-
-                    // destroy the powerup for garbage collection
-                    powerupToEat.destroy();
-                }
-            }
-
-            for (var x = 0; x < this.enemies.length; x++){
-                if (Phaser.Rectangle.intersects(this.player.sprite, this.enemies[x].sprite)){
-                    this.enemies[x].killedPlayer = true;
-                    this.killPlayer();
-                }
-            }
-        }
+    init: function () {
+        // Initialize the physics engine
+        this.physics.startSystem(Phaser.Physics.ARCADE);
     },
 
     killPlayer: function(){
@@ -301,6 +168,51 @@ Game.prototype = {
             this.enemies[x].sprite.kill();
             this.enemies[x].sprite.reset(this.map.properties.EnemyStartX * this.map.tileWidth + (this.map.tileWidth / 2), this.map.properties.EnemyStartY * this.map.tileWidth + (this.map.tileWidth / 2));
         }
+    },
+
+    loadNextLevel: function () {
+        game.state.start('LoadNextLevel');
+    },
+
+    powerupSoundStopped: function () {
+        this.powerupSoundPlaying = false;
+    },
+
+    preload: function () {
+
+        // Preload the player
+        this.player.preload(this);
+
+        // Preload the enemies
+        for (var x = 0; x < this.enemies.length; x++) {
+            this.enemies[x].preload(this);
+        }
+
+        // Preload the HUD
+        this.hud.preload(this);
+
+        // Load Steak and Duck pictures
+        this.load.image('powerup', 'assets/pics/steak.png');
+        this.load.image('dots', 'assets/pics/hotdog.png');
+
+
+
+        // Load level tilemap
+        this.load.tilemap('iowa', 'assets/levels/iowa.json', null, Phaser.Tilemap.TILED_JSON);
+        // Load tile sheet
+        this.load.image('tiles', 'assets/tilesets/iowaTiles.png');
+
+        // Load black for tweening between game states
+        this.load.image('blackScreen', 'assets/pics/black.png');
+
+        // Load Sound effects
+        this.load.audio('eatSteak', 'assets/sounds/eatSteak.mp3');
+        this.load.audio('powerup0', 'assets/sounds/powerup0.mp3');
+        this.load.audio('powerup1', 'assets/sounds/powerup1.mp3');
+        this.load.audio('powerup2', 'assets/sounds/powerup2.mp3');
+        this.load.audio('powerup3', 'assets/sounds/powerup3.mp3');
+        this.load.audio('iRun', 'assets/sounds/iRun.mp3');
+
     },
 
     recursiveDrawPoints: function (tile, level, max) {
@@ -358,8 +270,12 @@ Game.prototype = {
 */
     },
 
-    loadNextLevel: function () {
-        game.state.start('LoadNextLevel');
+    start: function () {
+
+        for (var x = 0; x < this.powerupSounds.length; x++) {
+            this.powerupSounds[x].onStop.add(this.powerupSoundStopped, this);
+        }
+
     },
 
     startPowerupMode: function () {
@@ -381,15 +297,6 @@ Game.prototype = {
         this.powerupModeTimer.start();
     },
 
-    warnStopPowerupMode: function(){
-        this.warnPowerupModeTimer.destroy();
-        this.warnPowerupModeTimer = game.time.create(false);
-        this.warnPowerupModeTimer.add(this.warnPowerupModeLength, this.warnStopPowerupMode, this);
-        for (var x = 0; x < this.enemies.length; x++) {
-            this.enemies[x].warnPowerupMode();
-        }
-    },
-
     stopPowerupMode: function () {
 
         this.powerupModeTimer.destroy();
@@ -402,7 +309,107 @@ Game.prototype = {
         }
     },
 
-    powerupSoundStopped: function () {
-        this.powerupSoundPlaying = false;
-    }
+    update: function () {
+
+        if (!this.loadingNextLevel && !this.fadingIn) {
+
+            // Check if the player has any lives left
+            if(this.player.lives == 0){
+                game.state.remove('Game');
+                game.state.add('GameOver', GameOver, false);
+                game.state.start('GameOver', true, false, this.hud.points);
+                return;
+            }
+
+            // Check if the player ate all the steaks (WIN)
+            if (this.steaks.length == 0) {
+                this.loadingNextLevel = true;
+                this.iRunSound.play();
+                var blackScreen = this.add.sprite(game.width / 2, game.height / 2, 'blackScreen');
+                blackScreen.anchor.set(0.5);
+                blackScreen.scale.setTo(1000, 1000);
+                blackScreen.alpha = 0.0;
+
+                var loadTween = this.add.tween(blackScreen).to({alpha: 1}, 1000, Phaser.Easing.Linear.None, true, 0, 0, false);
+                loadTween.onComplete.add(this.loadNextLevel, this);
+            }
+
+            this.hud.update();
+
+            if (this.powerupMode) {
+                //this.applySpecialEffects();
+            }
+
+            this.player.update();
+
+            // Calculate the pathmap every other update to save cpu
+            this.everyOther = !this.everyOther;
+            if(this.everyOther) {
+
+                this.pathPoints = [];
+                for(var y = 0; y < this.map.height; y++)
+                    for (var x = 0; x < this.map.width; x++) {
+                        if(this.anyMatches(this.map.getTile(x,y).index,this.safetiles)) {
+                            this.pathPoints[this.map.width*y+x] = 20;
+                        }
+                    }
+                this.recursiveDrawPoints(this.player.marker, 0, 15);
+            }
+
+            for (var x = 0; x < this.enemies.length; x++) {
+                this.enemies[x].update();
+            }
+
+            // Go through each steak
+            for (var x = 0; x < this.steaks.length; x++) {
+                // If there is a collision with trump
+                var steakToEat = this.steaks[x];
+                if (Phaser.Rectangle.intersects(this.player.sprite, steakToEat)) {
+                    if (!this.powerupSoundPlaying) {
+                        this.eatSteakSound.play();
+                    }
+                    this.hud.addPoint();
+
+                    // Remove the steak from the array
+                    this.steaks.splice(x, 1);
+                    // destroy the steak for garbage collection
+                    steakToEat.destroy();
+                }
+            }
+
+            // Go through powerups
+            for (var x = 0; x < this.powerups.length; x++) {
+                // If there is a collision with trump
+                var powerupToEat = this.powerups[x];
+                if (Phaser.Rectangle.intersects(this.player.sprite, powerupToEat)) {
+
+                    // Enter powerup mode
+                    this.startPowerupMode();
+
+                    // Remove the powerup from the array
+                    this.powerups.splice(x, 1);
+
+                    // destroy the powerup for garbage collection
+                    powerupToEat.destroy();
+                }
+            }
+
+            for (var x = 0; x < this.enemies.length; x++){
+                if (Phaser.Rectangle.intersects(this.player.sprite, this.enemies[x].sprite)){
+                    this.enemies[x].killedPlayer = true;
+                    this.killPlayer();
+                }
+            }
+        }
+    },
+
+    warnStopPowerupMode: function(){
+        this.warnPowerupModeTimer.destroy();
+        this.warnPowerupModeTimer = game.time.create(false);
+        this.warnPowerupModeTimer.add(this.warnPowerupModeLength, this.warnStopPowerupMode, this);
+        for (var x = 0; x < this.enemies.length; x++) {
+            this.enemies[x].warnPowerupMode();
+        }
+    },
+
 };
