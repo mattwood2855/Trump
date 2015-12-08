@@ -21,12 +21,15 @@ function Enemy() {
     this.delay = 0;
     this.directions = [null, null, null, null, null];
     this.gameRef = {};
+    this.id = 0;
     this.killedPlayer = false;
     this.marker = new Phaser.Point();
     this.opposites = [Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP];
     this.powerupMode = false;
+    this.scatterMap = [];
     this.speed = 175;
     this.sprite = {};
+    this.targetTile = new Phaser.Point();
     this.threshold = 3;
     this.turning = Phaser.NONE;
     this.turnPoint = new Phaser.Point();
@@ -61,20 +64,16 @@ Enemy.prototype = {
         if (this.directions[4]) potentialMovePoints[Phaser.DOWN] = this.gameRef.pathPoints[this.directions[4].y * this.gameRef.map.width + this.directions[4].x];
 
         var bestMove = 0;
-        if(this.powerupMode){
-            var value = 0;
-            for (var i = 1; i < potentialMovePoints.length; i++) {
-                if (potentialMovePoints[i] >= 0) {
+        if(this.ai == AI.SCATTER){
 
-                    if (potentialMovePoints[i] > value) {
-                        value = potentialMovePoints[i];
-                        bestMove = i;
-                    }
-                }
+            if (this.directions[1]) potentialMovePoints[Phaser.LEFT] = this.scatterMap[this.directions[1].y * this.gameRef.map.width + this.directions[1].x];
+            if (this.directions[2]) potentialMovePoints[Phaser.RIGHT] = this.scatterMap[this.directions[2].y * this.gameRef.map.width + this.directions[2].x];
+            if (this.directions[3]) potentialMovePoints[Phaser.UP] = this.scatterMap[this.directions[3].y * this.gameRef.map.width + this.directions[3].x];
+            if (this.directions[4]) potentialMovePoints[Phaser.DOWN] = this.scatterMap[this.directions[4].y * this.gameRef.map.width + this.directions[4].x];
+
+            if(this.current > 0) {
+                potentialMovePoints[this.opposites[this.current]] = 'undefined';
             }
-        }
-        // Get the lowest pathfinding score of all the enemies potential moves. The lowest number is the shortest path to the player
-        else {
 
             var value = 100;
             for (var i = 1; i < potentialMovePoints.length; i++) {
@@ -83,6 +82,39 @@ Enemy.prototype = {
                     if (potentialMovePoints[i] < value) {
                         value = potentialMovePoints[i];
                         bestMove = i;
+                    }
+                    if(potentialMovePoints[i] == value){
+                        if(Math.random() < .5){
+                            bestMove = i;
+                        }
+                    }
+                }
+            }
+        }
+        else {
+            if (this.ai == AI.FRIGHTENED) {
+                var value = 0;
+                for (var i = 1; i < potentialMovePoints.length; i++) {
+                    if (potentialMovePoints[i] >= 0) {
+
+                        if (potentialMovePoints[i] > value) {
+                            value = potentialMovePoints[i];
+                            bestMove = i;
+                        }
+                    }
+                }
+            }
+            // Get the lowest pathfinding score of all the enemies potential moves. The lowest number is the shortest path to the player
+            else if (this.ai == AI.CHASE) {
+
+                var value = 100;
+                for (var i = 1; i < potentialMovePoints.length; i++) {
+                    if (potentialMovePoints[i] >= 0) {
+
+                        if (potentialMovePoints[i] < value) {
+                            value = potentialMovePoints[i];
+                            bestMove = i;
+                        }
                     }
                 }
             }
@@ -136,7 +168,7 @@ Enemy.prototype = {
 
     },
 
-    create: function (map, enemyType) {
+    create: function (id, map, enemyType) {
 
         // Create the enemy sprite
         this.sprite = this.gameRef.add.sprite(map.properties.EnemyStartX * map.tileWidth + (map.tileWidth / 2), map.properties.EnemyStartY * map.tileHeight + (map.tileHeight / 2), 'enemy');
@@ -144,37 +176,59 @@ Enemy.prototype = {
         this.sprite.scale.setTo(2, 2);
 
         // Create all the animations
-        if(enemyType == EnemyType.RED) {
+        if (enemyType == EnemyType.RED) {
             this.sprite.animations.add('right', [22, 23]);
             this.sprite.animations.add('left', [20, 21]);
             this.sprite.animations.add('up', [16, 17]);
             this.sprite.animations.add('down', [18, 19]);
         }
-        else if(enemyType == EnemyType.PINK){
+        else if (enemyType == EnemyType.PINK) {
             this.sprite.animations.add('right', [30, 31]);
             this.sprite.animations.add('left', [28, 29]);
             this.sprite.animations.add('up', [24, 25]);
             this.sprite.animations.add('down', [26, 27]);
         }
-        else if(enemyType == EnemyType.BLUE){
+        else if (enemyType == EnemyType.BLUE) {
             this.sprite.animations.add('right', [38, 39]);
             this.sprite.animations.add('left', [36, 37]);
             this.sprite.animations.add('up', [32, 33]);
             this.sprite.animations.add('down', [34, 35]);
         }
-        else if(enemyType == EnemyType.YELLOW){
+        else if (enemyType == EnemyType.YELLOW) {
             this.sprite.animations.add('right', [46, 47]);
             this.sprite.animations.add('left', [44, 45]);
             this.sprite.animations.add('up', [40, 41]);
             this.sprite.animations.add('down', [42, 43]);
         }
-        this.sprite.animations.add('powerup', [12,13]);
-        this.sprite.animations.add('powerupEnding', [12,13,14,15]);
+        this.sprite.animations.add('powerup', [12, 13]);
+        this.sprite.animations.add('powerupEnding', [12, 13, 14, 15]);
+
+        this.sprite.animations.play('up', 4, true);
 
         // Enable physics for the enemy
         this.gameRef.physics.arcade.enable(this.sprite);
 
-        this.move(Math.floor(Math.random() * 4 + 1));
+        // Build a scatter map for this enemy
+        if (id == 0) {
+            this.targetTile.x = this.gameRef.map.properties.Enemy1X;
+            this.targetTile.y = this.gameRef.map.properties.Enemy1Y;
+        }
+        if (id == 1) {
+            this.targetTile.x = this.gameRef.map.properties.Enemy2X;
+            this.targetTile.y = this.gameRef.map.properties.Enemy2Y;
+        }
+        if (id == 2) {
+            this.targetTile.x = this.gameRef.map.properties.Enemy3X;
+            this.targetTile.y = this.gameRef.map.properties.Enemy3Y;
+        }
+        if (id == 3) {
+            this.targetTile.x = this.gameRef.map.properties.Enemy4X;
+            this.targetTile.y = this.gameRef.map.properties.Enemy4Y;
+        }
+
+        this.scatterMap = this.gameRef.buildPathfindingMap(this.targetTile, 0, 15);
+
+
     },
 
     deActivatePowerupMode: function(){
@@ -244,7 +298,7 @@ Enemy.prototype = {
 
     update: function () {
 
-        // Perform collisions between player and level
+        // Perform collisions between enemy and level
         this.gameRef.physics.arcade.collide(this.sprite, this.gameRef.layer);
 
         // Wrap the player if they walk off the edge

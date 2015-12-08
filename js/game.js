@@ -3,7 +3,10 @@ var sprite;
 
 var Game = function (game) {
 
-    this.fadingIn = true;
+    this.countDownText = {};
+    this.countDownTimer = {};
+    this.countDownCounter = 3;
+    this.readyToStart = false;
     this.map = null;
     this.hud = new Hud();
     this.layer = null;
@@ -54,6 +57,32 @@ Game.prototype = {
         return false;
     },
 
+    buildPathfindingMap: function(tile, level, max){
+        var pathfindingMap = [];
+
+        for(var y = 0; y < this.map.height; y++)
+            for (var x = 0; x < this.map.width; x++) {
+                if(this.anyMatches(this.map.getTile(x,y).index,this.safetiles)) {
+                    pathfindingMap[this.map.width*y+x] = 20;
+                }
+            }
+        this.recursiveDrawPoints(tile, level, max, pathfindingMap);
+        return pathfindingMap;
+    },
+
+    countdown: function(){
+
+        this.countDownCounter--;
+        if(this.countDownCounter == 0){
+            this.countDownText.setText("");
+            this.countDownTimer.stop();
+            this.readyToStart = true;
+        }
+        else {
+            this.countDownText.setText(this.countDownCounter.toString());
+        }
+    },
+
     create: function () {
 
         this.powerupModeTimer = game.time.create(false);
@@ -68,10 +97,10 @@ Game.prototype = {
 
         this.player.create(this.map);
 
-        this.enemies[0].create(this.map, EnemyType.RED);
-        this.enemies[1].create(this.map, EnemyType.PINK);
-        this.enemies[2].create(this.map, EnemyType.BLUE);
-        this.enemies[3].create(this.map, EnemyType.YELLOW);
+        this.enemies[0].create(0, this.map, EnemyType.RED);
+        this.enemies[1].create(1, this.map, EnemyType.PINK);
+        this.enemies[2].create(2, this.map, EnemyType.BLUE);
+        this.enemies[3].create(3, this.map, EnemyType.YELLOW);
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -130,12 +159,16 @@ Game.prototype = {
         this.fadeSprite.width = game.width;
         this.fadeSprite.height = game.height;
         this.fadeSprite.alpha = 1;
-        // Add a zoom tween that last forever
-        this.add.tween(this.fadeSprite).to({
-            alpha: 0
-        }, 2000, Phaser.Easing.Linear.None, true).onComplete.add(this.startGame, this);
+        this.add.tween(this.fadeSprite).to({ alpha: 0 }, 2000, Phaser.Easing.Linear.None, true);
 
 
+        var style = {font: "150px Arial Bold", fill: "#ff6600", align: "center"};
+        this.countDownText = game.add.text(game.width / 2, game.height / 2, this.countDownCounter.toString(), style);
+        this.countDownText.anchor.setTo(0.5);
+
+        this.countDownTimer = game.time.create(false);
+        this.countDownTimer.loop(1000, this.countdown, this);
+        this.countDownTimer.start();
     },
 
     getAngle: function (to) {
@@ -215,27 +248,31 @@ Game.prototype = {
 
     },
 
-    recursiveDrawPoints: function (tile, level, max) {
+    recursiveDrawPoints: function (tile, level, max, pathfindingMap, originalTile) {
 
         // Max recursion level
         if (level > max) return;
 
+        // If this is the first level of recursion
         if (level == 0) {
-            this.pathPoints[tile.y * this.map.width + tile.x] = level;
+            // Set the pathfinding value for the square the object is in to 0
+            pathfindingMap[parseInt(tile.y) * parseInt(this.map.width) + parseInt(tile.x)] = level;
+            // Increase level to one for all adjacent tiles
             level++;
+            originalTile = tile;
         }
 
         // Get all the surrounding tiles
         var tiles = [];
-        tiles[0] = this.map.getTileLeft(this.layer.index, tile.x, tile.y);
-        tiles[1] = this.map.getTileRight(this.layer.index, tile.x, tile.y);
-        tiles[2] = this.map.getTileAbove(this.layer.index, tile.x, tile.y);
-        tiles[3] = this.map.getTileBelow(this.layer.index, tile.x, tile.y);
+        tiles[0] = this.map.getTileLeft(this.layer.index, parseInt(tile.x), parseInt(tile.y));
+        tiles[1] = this.map.getTileRight(this.layer.index, parseInt(tile.x), parseInt(tile.y));
+        tiles[2] = this.map.getTileAbove(this.layer.index, parseInt(tile.x), parseInt(tile.y));
+        tiles[3] = this.map.getTileBelow(this.layer.index, parseInt(tile.x), parseInt(tile.y));
 
         // Go through each surrounding tile
         for (var x = 0; x < 4; x++) {
             // If the tile exists and is not the player tile
-            if (tiles[x] && !(tiles[x].x == this.player.marker.x && tiles[x].y == this.player.marker.y)) {
+            if (tiles[x] && !(tiles[x].x == originalTile.x && tiles[x].y == originalTile.y)) {
                 // Calculate the 1 dimensional position of the tile
                 var tile1Dindex = tiles[x].y * this.map.width + tiles[x].x;
 
@@ -243,19 +280,19 @@ Game.prototype = {
                 if (this.anyMatches(tiles[x].index, this.safetiles)) {
 
                     // If this tile has already been assigned a point
-                    if (this.pathPoints[tile1Dindex]) {
+                    if (pathfindingMap[tile1Dindex]) {
 
                         // If this path calculation is shorter
-                        if (level < this.pathPoints[tile1Dindex]) {
+                        if (level < pathfindingMap[tile1Dindex]) {
 
                             // Assign the smaller point value
-                            this.pathPoints[tile1Dindex] = level;
+                            pathfindingMap[tile1Dindex] = level;
                         }
                     }
                     else {
-                        this.pathPoints[tile1Dindex] = level;
+                        pathfindingMap[tile1Dindex] = level;
                     }
-                    this.recursiveDrawPoints(tiles[x], level + 1, max);
+                    this.recursiveDrawPoints(tiles[x], level + 1, max, pathfindingMap, originalTile);
                 }
             }
         }
@@ -263,11 +300,16 @@ Game.prototype = {
 
     render: function () {
 
-        /*for (var x = 0; x < this.pathPoints.length; x++) {
+        for (var x = 0; x < this.pathPoints.length; x++) {
             if (this.pathPoints[x] >= 0)
                 game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x / this.map.width) * this.gridsize + this.gridsize / 2);
         }
-*/
+
+        /*for (var x = 0; x < this.enemies[0].scatterMap.length; x++) {
+            if (this.enemies[0].scatterMap[x] >= 0)
+                game.debug.text(this.enemies[0].scatterMap[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x / this.map.width) * this.gridsize + this.gridsize / 2);
+        }*/
+
     },
 
     start: function () {
@@ -311,7 +353,7 @@ Game.prototype = {
 
     update: function () {
 
-        if (!this.loadingNextLevel && !this.fadingIn) {
+        if (!this.loadingNextLevel && this.readyToStart) {
 
             // Check if the player has any lives left
             if(this.player.lives == 0){
@@ -345,15 +387,7 @@ Game.prototype = {
             // Calculate the pathmap every other update to save cpu
             this.everyOther = !this.everyOther;
             if(this.everyOther) {
-
-                this.pathPoints = [];
-                for(var y = 0; y < this.map.height; y++)
-                    for (var x = 0; x < this.map.width; x++) {
-                        if(this.anyMatches(this.map.getTile(x,y).index,this.safetiles)) {
-                            this.pathPoints[this.map.width*y+x] = 20;
-                        }
-                    }
-                this.recursiveDrawPoints(this.player.marker, 0, 15);
+                this.pathPoints = this.buildPathfindingMap(this.player.marker, 0, 15);
             }
 
             for (var x = 0; x < this.enemies.length; x++) {

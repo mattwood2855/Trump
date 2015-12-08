@@ -26,6 +26,14 @@
  "orientation":"orthogonal",
  "properties":
     {
+     "Enemy1X":"1",
+     "Enemy1Y":"1",
+     "Enemy2X":"17",
+     "Enemy2Y":"1",
+     "Enemy3X":"1",
+     "Enemy3Y":"10",
+     "Enemy4X":"17",
+     "Enemy4Y":"10",
      "EnemyStartX":"9",
      "EnemyStartY":"10",
      "PlayerStartX":"9",
