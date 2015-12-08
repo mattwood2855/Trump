@@ -8,6 +8,8 @@ var Menu = function (game) {
     this.background = null;
     this.buttonWidth = 250;
     this.buttonHeight = 55;
+    this.fadingOut = false;
+    this.fadeSprite = {};
 
     this.playButton = {};
     this.playButtonText = {};
@@ -62,7 +64,7 @@ Menu.prototype = {
         this.load.image('instructionsMenu', 'assets/pics/instructionsMenu.png');
 
         // Load the background sound clip
-        this.load.audio('trumpSaysChina', 'assets/sounds/trumpSaysChina.mp3');
+        this.load.audio('bgmusic', 'assets/sounds/bensound-creepy.mp3');
         this.load.audio('plop', 'assets/sounds/140705__dreeke__champaign-cork.mp3');
     },
 
@@ -79,22 +81,37 @@ Menu.prototype = {
     },
 
     clickPlay: function(){
-        this.backgroundSound.stop();
-        game.state.remove('Menu');
-        game.state.add('Game', Game, true);
+        this.fadingOut = true;
+        this.backgroundSound.fadeOut(1500);
+        this.fadeSprite = game.add.sprite(0, 0, 'blackScreen');
+        this.fadeSprite.width = game.width;
+        this.fadeSprite.height = game.height;
+        this.fadeSprite.alpha = 0;
+        // Add a zoom tween that last forever
+        this.add.tween(this.fadeSprite).to({
+            alpha: 1
+        }, 2000, Phaser.Easing.Linear.None, true).onComplete.add(this.startGame, this);
+    },
+
+    destroyInstructions: function(){
+        this.instructionsPopup.kill();
+        game.paused = false;
     },
 
     hoverDonate: function(){
+        if(this.fadingOut) return;
         this.clickSound.play();
         this.currentSelection = 2;
     },
 
     hoverInstructions: function(){
+        if(this.fadingOut) return;
         this.clickSound.play();
         this.currentSelection = 1;
     },
 
     hoverPlay: function(){
+        if(this.fadingOut) return;
         this.clickSound.play();
         this.currentSelection = 0;
     },
@@ -149,7 +166,7 @@ Menu.prototype = {
         this.selectKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
 
         // Decode the background audio file
-        this.backgroundSound = this.add.audio('trumpSaysChina');
+        this.backgroundSound = this.add.audio('bgmusic');
 
         // add select sound
         this.clickSound = this.add.audio('plop');
@@ -159,16 +176,18 @@ Menu.prototype = {
     },
 
     start: function () {
-
-        //this.backgroundSound.play();
+        this.backgroundSound.play();
     },
 
-    destroyInstructions: function(){
-        this.instructionsPopup.kill();
-        game.paused = false;
+    startGame: function(){
+        this.backgroundSound.stop();
+        game.state.remove('Menu');
+        game.state.add('Game', Game, true);
     },
 
     update: function () {
+
+        if(this.fadingOut) return;
 
         if (this.buttonPulseFading) {
             this.buttonPulse--;
@@ -228,7 +247,6 @@ Menu.prototype = {
             this.donateButton.tint = '0x' + this.buttonPulse.toString() + '00' + '00';
         }
     },
-
 
     visitPage: function () {
         window.open('http://www.google.com', '_blank');

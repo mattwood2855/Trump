@@ -7,8 +7,6 @@ var Game = function (game) {
     this.hud = new Hud();
     this.layer = null;
 
-
-
     this.player = new Player();
     this.enemies = [];
     this.enemies[0] = new Enemy();
@@ -68,8 +66,8 @@ Game.prototype = {
         this.hud.preload(this);
 
         // Load Steak and Duck pictures
-        this.load.image('steak', 'assets/pics/steak.png');
-        this.load.image('duck', 'assets/pics/duck.png');
+        this.load.image('powerup', 'assets/pics/steak.png');
+        this.load.image('dots', 'assets/pics/hotdog.png');
 
 
 
@@ -120,7 +118,7 @@ Game.prototype = {
                 // If the tile is a steak tile
                 if (tile.index == this.steakTileIndex) {
                     // Create a new steak object at the center of this tile
-                    var newSteak = this.add.sprite((tile.x * this.gridsize) + this.gridsize / 2, tile.y * this.gridsize + this.gridsize / 2, 'steak');
+                    var newSteak = this.add.sprite((tile.x * this.gridsize) + this.gridsize / 2, tile.y * this.gridsize + this.gridsize / 2, 'dots');
                     newSteak.anchor.set(0.5);
                     newSteak.scale.setTo(0.5, 0.5);
 
@@ -130,7 +128,7 @@ Game.prototype = {
                 // If this is a powerup tile
                 if (tile.index == this.powerupTileIndex) {
                     // Create a new powerup object at the center of this tile
-                    var newPowerup = this.add.sprite((tile.x * this.gridsize) + this.gridsize / 2, tile.y * this.gridsize + this.gridsize / 2, 'duck');
+                    var newPowerup = this.add.sprite((tile.x * this.gridsize) + this.gridsize / 2, tile.y * this.gridsize + this.gridsize / 2, 'powerup');
                     newPowerup.anchor.set(0.5);
                     newPowerup.scale.setTo(0.5, 0.5);
 
@@ -295,7 +293,6 @@ Game.prototype = {
             }
         }
     },
-
 
     killPlayer: function(){
 
