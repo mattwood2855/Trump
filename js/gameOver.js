@@ -6,6 +6,7 @@ var GameOver = function (game) {
     this.messageText = '';
     this.points = 0;
     this.pointsText = '';
+    this.apiCall = 'localhost:9411/api/Scores';
 }
 
 GameOver.prototype = {

@@ -23,7 +23,7 @@ InstructionsMenu.prototype = {
     preload : function() {
 
         // Load all the menu graphics
-        this.load.image('instructionsMenu', 'assets/instructionsMenu.png');
+        this.load.image('instructionsMenu', 'assets/pics/bg.jpg');
 
     },
 
