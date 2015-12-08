@@ -202,7 +202,8 @@ Game.prototype = {
         for(var x = 0; x < this.enemies.length; x++) {
             this.enemies[x].sprite.kill();
             this.enemies[x].sprite.reset(this.map.properties.EnemyStartX * this.map.tileWidth + (this.map.tileWidth / 2), this.map.properties.EnemyStartY * this.map.tileWidth + (this.map.tileWidth / 2));
-            //this.enemies[x].switchToScatter();
+            this.enemies[x].switchToScatter();
+            this.enemies[x].move(Phaser.UP);
         }
     },
 
