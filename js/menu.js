@@ -182,7 +182,8 @@ Menu.prototype = {
     startGame: function(){
         this.backgroundSound.stop();
         game.state.remove('Menu');
-        game.state.add('Game', Game, true);
+        game.state.add('Game', Game, false);
+        game.state.start('Game', true, false, 0);
     },
 
     update: function () {

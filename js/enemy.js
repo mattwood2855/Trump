@@ -17,6 +17,8 @@ EnemyType = {
 function Enemy() {
 
     this.ai = AI.SCATTER;
+    this.chaseTimer = {};
+    this.timeToScatter = 10000;
     this.current = Phaser.NONE;
     this.delay = 0;
     this.directions = [null, null, null, null, null];
@@ -29,6 +31,8 @@ function Enemy() {
     this.scatterMap = [];
     this.speed = 175;
     this.sprite = {};
+    this.startX = 0;
+    this.startY = 0;
     this.targetTile = new Phaser.Point();
     this.threshold = 3;
     this.turning = Phaser.NONE;
@@ -41,6 +45,8 @@ Enemy.prototype = {
     activatePowerupMode: function(){
         this.powerupMode = true;
         this.sprite.animations.play('powerup', 4, true);
+        this.ai = AI.FRIGHTENED;
+        this.speed *= .5;
     },
 
     calculateNextMove: function(){
@@ -170,8 +176,10 @@ Enemy.prototype = {
 
     create: function (id, map, enemyType) {
 
+        this.startX = map.properties.EnemyStartX * map.tileWidth + (map.tileWidth / 2);
+        this.startY = map.properties.EnemyStartY * map.tileHeight + (map.tileHeight / 2);
         // Create the enemy sprite
-        this.sprite = this.gameRef.add.sprite(map.properties.EnemyStartX * map.tileWidth + (map.tileWidth / 2), map.properties.EnemyStartY * map.tileHeight + (map.tileHeight / 2), 'enemy');
+        this.sprite = this.gameRef.add.sprite(this.startX, this.startY, 'enemy');
         this.sprite.anchor.set(0.5);
         this.sprite.scale.setTo(2, 2);
 
@@ -228,11 +236,16 @@ Enemy.prototype = {
 
         this.scatterMap = this.gameRef.buildPathfindingMap(this.targetTile, 0, 15);
 
+        this.chaseTimer = game.time.create(false);
+        this.chaseTimer.add(this.timeToScatter, this.switchToChase, this);
+        this.chaseTimer.start();
 
     },
 
     deActivatePowerupMode: function(){
         this.powerupMode = false;
+        this.ai = AI.CHASE;
+        this.speed *= 2;
     },
 
     move: function (direction) {
@@ -267,6 +280,16 @@ Enemy.prototype = {
         // Load the sprite sheet for the bad guy
         this.gameRef.load.spritesheet('enemy', 'assets/sprites/pacmansprites.png', 32, 32, 64);
 
+    },
+
+    switchToChase: function(){
+        this.ai = AI.CHASE;
+    },
+
+    switchToScatter: function(milliseconds){
+        this.ai = AI.SCATTER;
+        this.chaseTimer.add(this.timeToScatter, this.switchToChase, this);
+        this.chaseTimer.start();
     },
 
     turn: function () {
@@ -335,6 +358,14 @@ Enemy.prototype = {
 
     warnPowerupMode: function(){
         this.sprite.animations.play('powerupEnding', 4, true)
+    },
+
+    wasEaten: function(){
+        console.log("I was eaten")
+        this.targetTile.x = this.gameRef.map.properties.EnemyStartX;
+        this.targetTile.y = this.gameRef.map.properties.EnemyStartY;
+        this.scatterMap = this.gameRef.buildPathfindingMap(this.targetTile, 0, 15);
+        this.ai = AI.SCATTER;
     }
 
 };

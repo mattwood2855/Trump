@@ -4,6 +4,6 @@
 
 var game = new Phaser.Game(1216, 768, Phaser.CANVAS, 'Trump');
 
-//game.state.add('Menu', Menu, true);
-game.state.add('Game', Game, true);
+game.state.add('Menu', Menu, true);
+//game.state.add('Game', Game, true);
 

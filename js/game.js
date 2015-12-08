@@ -39,6 +39,7 @@ var Game = function (game) {
     this.gridsize = 64;
     this.pathPoints = [];
 
+    this.level = 0;
     this.levels = ['assets/levels/iowa.json',
         'assets/levels/newHampshire.json',
         'assets/levels/southCarolina.json',
@@ -90,7 +91,7 @@ Game.prototype = {
         this.warnPowerupModeTimer = game.time.create(false);
         this.warnPowerupModeTimer.add(this.warnPowerupModeLength, this.warnStopPowerupMode, this);
 
-        this.map = game.add.tilemap('iowa');
+        this.map = game.add.tilemap('level');
         this.map.addTilesetImage('IowaTiles', 'tiles');
         this.layer = this.map.createLayer('Ground');
         this.map.setCollisionByExclusion([12, 36, 37], true, this.layer);
@@ -189,9 +190,10 @@ Game.prototype = {
 
     },
 
-    init: function () {
+    init: function (level) {
         // Initialize the physics engine
         this.physics.startSystem(Phaser.Physics.ARCADE);
+        this.level = level;
     },
 
     killPlayer: function(){
@@ -200,11 +202,14 @@ Game.prototype = {
         for(var x = 0; x < this.enemies.length; x++) {
             this.enemies[x].sprite.kill();
             this.enemies[x].sprite.reset(this.map.properties.EnemyStartX * this.map.tileWidth + (this.map.tileWidth / 2), this.map.properties.EnemyStartY * this.map.tileWidth + (this.map.tileWidth / 2));
+            //this.enemies[x].switchToScatter();
         }
     },
 
     loadNextLevel: function () {
-        game.state.start('LoadNextLevel');
+        game.state.destroy('Game');
+        game.state.add('LoadNextLevel', LoadNextLevel, false);
+        game.state.start('LoadNextLevel', true, false, this.l)
     },
 
     powerupSoundStopped: function () {
@@ -231,7 +236,8 @@ Game.prototype = {
 
 
         // Load level tilemap
-        this.load.tilemap('iowa', 'assets/levels/iowa.json', null, Phaser.Tilemap.TILED_JSON);
+        this.load.tilemap('level', this.levels[this.level], null, Phaser.Tilemap.TILED_JSON);
+        console.log('Loading ' + this.levels[this.level]);
         // Load tile sheet
         this.load.image('tiles', 'assets/tilesets/iowaTiles.png');
 
@@ -300,10 +306,10 @@ Game.prototype = {
 
     render: function () {
 
-        for (var x = 0; x < this.pathPoints.length; x++) {
+        /*for (var x = 0; x < this.pathPoints.length; x++) {
             if (this.pathPoints[x] >= 0)
                 game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x / this.map.width) * this.gridsize + this.gridsize / 2);
-        }
+        }*/
 
         /*for (var x = 0; x < this.enemies[0].scatterMap.length; x++) {
             if (this.enemies[0].scatterMap[x] >= 0)
@@ -430,8 +436,13 @@ Game.prototype = {
 
             for (var x = 0; x < this.enemies.length; x++){
                 if (Phaser.Rectangle.intersects(this.player.sprite, this.enemies[x].sprite)){
-                    this.enemies[x].killedPlayer = true;
-                    this.killPlayer();
+                    if(this.powerupMode){
+                        this.enemies[x].wasEaten();
+                    }
+                    else {
+                        this.enemies[x].killedPlayer = true;
+                        this.killPlayer();
+                    }
                 }
             }
         }
