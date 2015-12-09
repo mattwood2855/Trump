@@ -41,7 +41,7 @@ var Menu = function (game) {
 
 
     // Background sound clip
-    this.backgroundSound = null;
+    this.backgroundMusic = null;
 
     this.preventKeypress = false;
 
@@ -64,12 +64,12 @@ Menu.prototype = {
         this.load.image('instructionsMenu', 'assets/pics/instructionsMenu.png');
 
         // Load the background sound clip
-        this.load.audio('bgmusic', 'assets/sounds/bensound-creepy.mp3');
+        this.load.audio('bgmusic', 'assets/sounds/mainMenuBg.mp3');
         this.load.audio('plop', 'assets/sounds/140705__dreeke__champaign-cork.mp3');
     },
 
     clickDonate: function(){
-        this.backgroundSound.stop();
+        this.backgroundMusic.stop();
         this.visitPage();
     },
 
@@ -82,7 +82,7 @@ Menu.prototype = {
 
     clickPlay: function(){
         this.fadingOut = true;
-        this.backgroundSound.fadeOut(1500);
+        this.backgroundMusic.fadeOut(1500);
         this.fadeSprite = game.add.sprite(0, 0, 'blackScreen');
         this.fadeSprite.width = game.width;
         this.fadeSprite.height = game.height;
@@ -166,21 +166,22 @@ Menu.prototype = {
         this.selectKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
 
         // Decode the background audio file
-        this.backgroundSound = this.add.audio('bgmusic');
+        this.backgroundMusic = this.add.audio('bgmusic');
+        this.backgroundMusic.volume = 0.3;
 
         // add select sound
         this.clickSound = this.add.audio('plop');
         this.clickSound.volume = 0.5;
-        game.sound.setDecodedCallback(this.backgroundSound, this.start, this);
+        game.sound.setDecodedCallback(this.backgroundMusic, this.start, this);
 
     },
 
     start: function () {
-        this.backgroundSound.play();
+        this.backgroundMusic.loopFull();
     },
 
     startGame: function(){
-        this.backgroundSound.stop();
+        this.backgroundMusic.stop();
         game.state.remove('Menu');
         game.state.add('Game', Game, false);
         game.state.start('Game', true, false, 0);

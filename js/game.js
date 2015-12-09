@@ -3,41 +3,40 @@ var sprite;
 
 var Game = function (game) {
 
+    this.bgMusic = {};
     this.countDownText = {};
     this.countDownTimer = {};
     this.countDownCounter = 3;
-    this.readyToStart = false;
-    this.map = null;
-    this.hud = new Hud();
-    this.layer = null;
-    this.fadeSprite = {};
-    this.player = new Player();
+    this.eatSteakSound = null;
     this.enemies = [];
     this.enemies[0] = new Enemy();
     this.enemies[1] = new Enemy();
     this.enemies[2] = new Enemy();
     this.enemies[3] = new Enemy();
     this.everyOther = false;
-
-    this.winText = '';
-
-    this.steaks = [];
-    this.steakTileIndex = 36;
+    this.fadeSprite = {};
+    this.gridsize = 64;
+    this.hud = new Hud();
+    this.iRunSound = null;
+    this.layer = null;
+    this.map = null;
+    this.pathPoints = [];
+    this.player = new Player();
     this.powerups = [];
     this.powerupTileIndex = 37;
-    this.powerupModeLength = 6000;
-
     this.powerupMode = false;
-    this.warnPowerupModeLength = 3000;
-
-    this.eatSteakSound = null;
+    this.powerupModeLength = 6000;
     this.powerupSounds = [];
     this.powerupSoundPlaying = false;
-    this.iRunSound = null;
+    this.readyToStart = false;
+    this.safetiles = [];
+    this.selectKey = {};
+    this.startingPoints = 0;
+    this.steaks = [];
+    this.steakTileIndex = 36;
+    this.winText = '';
 
-    this.safetiles = [12, 36, 37];
-    this.gridsize = 64;
-    this.pathPoints = [];
+    this.warnPowerupModeLength = 3000;
 
     this.level = 0;
     this.levels = ['assets/levels/iowa.json',
@@ -94,7 +93,12 @@ Game.prototype = {
         this.map = game.add.tilemap('level');
         this.map.addTilesetImage('IowaTiles', 'tiles');
         this.layer = this.map.createLayer('Ground');
-        this.map.setCollisionByExclusion([12, 36, 37], true, this.layer);
+        var pathTiles = this.map.properties.PathTiles.split(",");
+        for(var i=0; i < pathTiles.length; i++){
+            pathTiles[i] = parseInt(pathTiles[i], 10);
+        }
+        this.safetiles = pathTiles;
+        this.map.setCollisionByExclusion(pathTiles, true, this.layer);
 
         this.player.create(this.map);
 
@@ -142,6 +146,12 @@ Game.prototype = {
         // Create HUD
         this.hud.create();
 
+        // add point with function to update text
+        if(this.startingPoints) {
+            this.hud.points = this.startingPoints - 1;
+            this.hud.addPoint();
+        }
+
         // Create Audio
         this.eatSteakSound = this.add.audio('eatSteak');
         this.powerupSounds.push(this.add.audio('powerup0'));
@@ -154,7 +164,11 @@ Game.prototype = {
         //  Using setDecodedCallback we can be notified when they're ALL ready for use.
         //  The audio files could decode in ANY order, we can never be sure which it'll be.
 
-        game.sound.setDecodedCallback(this.powerupSounds, this.start, this);
+
+        // add select sound
+        this.bgMusic = this.add.audio('bgMusic');
+        this.bgMusic.volume = 0.5;
+        game.sound.setDecodedCallback(this.bgMusic, this.start, this);
 
         this.fadeSprite = game.add.sprite(0, 0, 'blackScreen');
         this.fadeSprite.width = game.width;
@@ -170,6 +184,8 @@ Game.prototype = {
         this.countDownTimer = game.time.create(false);
         this.countDownTimer.loop(1000, this.countdown, this);
         this.countDownTimer.start();
+
+        this.selectKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
     },
 
     getAngle: function (to) {
@@ -190,27 +206,44 @@ Game.prototype = {
 
     },
 
-    init: function (level) {
+    init: function (level, points) {
         // Initialize the physics engine
         this.physics.startSystem(Phaser.Physics.ARCADE);
         this.level = level;
+        this.startingPoints = points;
+
     },
 
     killPlayer: function(){
 
         this.player.hit();
         for(var x = 0; x < this.enemies.length; x++) {
+            var id = this.enemies[x].id;
+            var type = this.enemies[x].enemyType;
             this.enemies[x].sprite.kill();
-            this.enemies[x].sprite.reset(this.map.properties.EnemyStartX * this.map.tileWidth + (this.map.tileWidth / 2), this.map.properties.EnemyStartY * this.map.tileWidth + (this.map.tileWidth / 2));
-            this.enemies[x].switchToScatter();
-            this.enemies[x].move(Phaser.UP);
+            this.enemies[x] = new Enemy();
+            this.enemies[x].preload(this);
+            this.enemies[x].create(id, this.map, type);
         }
     },
 
-    loadNextLevel: function () {
-        game.state.destroy('Game');
+    levelFadeOut: function () {
+        this.iRunSound.play();
+        var blackScreen = this.add.sprite(game.width / 2, game.height / 2, 'blackScreen');
+        blackScreen.anchor.set(0.5);
+        blackScreen.scale.setTo(1000, 1000);
+        blackScreen.alpha = 0.0;
+
+        this.bgMusic.fadeOut(1000);
+        var loadTween = this.add.tween(blackScreen).to({alpha: 1}, 1000, Phaser.Easing.Linear.None, true, 0, 0, false);
+        loadTween.onComplete.add(this.loadNextLevel, this);
+
+    },
+
+    loadNextLevel: function(){
+        game.state.remove('Game');
         game.state.add('LoadNextLevel', LoadNextLevel, false);
-        game.state.start('LoadNextLevel', true, false, this.l)
+        game.state.start('LoadNextLevel', true, false, this.level, this.hud.points);
     },
 
     powerupSoundStopped: function () {
@@ -234,11 +267,9 @@ Game.prototype = {
         this.load.image('powerup', 'assets/pics/steak.png');
         this.load.image('dots', 'assets/pics/hotdog.png');
 
-
-
         // Load level tilemap
         this.load.tilemap('level', this.levels[this.level], null, Phaser.Tilemap.TILED_JSON);
-        console.log('Loading ' + this.levels[this.level]);
+
         // Load tile sheet
         this.load.image('tiles', 'assets/tilesets/iowaTiles.png');
 
@@ -252,6 +283,7 @@ Game.prototype = {
         this.load.audio('powerup2', 'assets/sounds/powerup2.mp3');
         this.load.audio('powerup3', 'assets/sounds/powerup3.mp3');
         this.load.audio('iRun', 'assets/sounds/iRun.mp3');
+        this.load.audio('bgMusic', 'assets/sounds/mainMenuBgMusic.mp3');
 
     },
 
@@ -307,12 +339,12 @@ Game.prototype = {
 
     render: function () {
 
-        for (var x = 0; x < this.pathPoints.length; x++) {
+        /*for (var x = 0; x < this.pathPoints.length; x++) {
             if (this.pathPoints[x] >= 0)
                 game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x / this.map.width) * this.gridsize + this.gridsize / 2);
         }
 
-        /*for (var x = 0; x < this.enemies[0].scatterMap.length; x++) {
+        for (var x = 0; x < this.enemies[0].scatterMap.length; x++) {
             if (this.enemies[0].scatterMap[x] >= 0)
                 game.debug.text(this.enemies[0].scatterMap[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x / this.map.width) * this.gridsize + this.gridsize / 2);
         }*/
@@ -320,7 +352,7 @@ Game.prototype = {
     },
 
     start: function () {
-
+        this.bgMusic.loopFull();
         for (var x = 0; x < this.powerupSounds.length; x++) {
             this.powerupSounds[x].onStop.add(this.powerupSoundStopped, this);
         }
@@ -360,6 +392,8 @@ Game.prototype = {
 
     update: function () {
 
+        if(this.selectKey.isDown) this.levelFadeOut();
+
         if (!this.loadingNextLevel && this.readyToStart) {
 
             // Check if the player has any lives left
@@ -373,14 +407,7 @@ Game.prototype = {
             // Check if the player ate all the steaks (WIN)
             if (this.steaks.length == 0) {
                 this.loadingNextLevel = true;
-                this.iRunSound.play();
-                var blackScreen = this.add.sprite(game.width / 2, game.height / 2, 'blackScreen');
-                blackScreen.anchor.set(0.5);
-                blackScreen.scale.setTo(1000, 1000);
-                blackScreen.alpha = 0.0;
-
-                var loadTween = this.add.tween(blackScreen).to({alpha: 1}, 1000, Phaser.Easing.Linear.None, true, 0, 0, false);
-                loadTween.onComplete.add(this.loadNextLevel, this);
+                this.levelFadeOut();
             }
 
             // Calculate the pathmap every other update to save cpu
@@ -436,13 +463,16 @@ Game.prototype = {
             }
 
             for (var x = 0; x < this.enemies.length; x++){
+                if(this.enemies[x].ai != AI.EATEN)
                 if (Phaser.Rectangle.intersects(this.player.sprite, this.enemies[x].sprite)){
                     if(this.powerupMode){
                         this.enemies[x].wasEaten();
                     }
                     else {
-                        this.enemies[x].killedPlayer = true;
-                        this.killPlayer();
+                        if(this.enemies[x].ai != AI.EATEN) {
+                            this.enemies[x].killedPlayer = true;
+                            this.killPlayer();
+                        }
                     }
                 }
             }

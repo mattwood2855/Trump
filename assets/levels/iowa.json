@@ -26,6 +26,7 @@
  "orientation":"orthogonal",
  "properties":
     {
+     "DotTiles":"",
      "Enemy1X":"1",
      "Enemy1Y":"1",
      "Enemy2X":"17",
@@ -36,8 +37,10 @@
      "Enemy4Y":"10",
      "EnemyStartX":"9",
      "EnemyStartY":"10",
+     "PathTiles":"12,36,37",
      "PlayerStartX":"9",
-     "PlayerStartY":"3"
+     "PlayerStartY":"3",
+     "PowerupTiles":""
     },
  "renderorder":"right-down",
  "tileheight":64,

@@ -4,13 +4,14 @@
 var LoadNextLevel = function (game) {
     this.messageText = '';
     this.levelToLoad = 0;
+    this.points = 0;
 }
 
 LoadNextLevel.prototype = {
 
-    init: function(levelToLoad){
-        console('LevelToLoad: ' + levelToLoad);
+    init: function(levelToLoad, points){
         this.levelToLoad = levelToLoad;
+        this.points = points;
     },
 
     preload : function() {
@@ -25,7 +26,8 @@ LoadNextLevel.prototype = {
     },
 
     update: function () {
+        console.log(this.points);
         game.state.add('Game', Game, false);
-        game.state.start('Game', true, false, this.levelToLoad);
+        game.state.start('Game', true, false, this.levelToLoad, this.points);
     }
 }

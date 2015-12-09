@@ -5,7 +5,8 @@ AI = {
     CHASE: 0,
     SCATTER: 1,
     FRIGHTENED: 2,
-    EATEN: 3
+    EATEN: 3,
+    STOP: 4
 };
 
 EnemyType = {
@@ -23,6 +24,7 @@ function Enemy() {
     this.current = Phaser.NONE;
     this.delay = 0;
     this.directions = [null, null, null, null, null];
+    this.enemyType = null;
     this.gameRef = {};
     this.id = 0;
     this.homeMap = [];
@@ -59,30 +61,49 @@ Enemy.prototype = {
             // Switch to freightened mode
             this.ai = AI.FRIGHTENED;
         }
-        this.move(this.current);
+        //this.move(this.current);
     },
 
     calculateShortestMove: function () {
         var value = 100;
-        var shortestMove;
+        var shortestMove = 0;
         for (var i = 1; i < this.potentialMovePoints.length; i++) {
-            if (this.potentialMovePoints[i]) {
-
+            if (this.potentialMovePoints[i] || this.potentialMovePoints[i] === 0) {
                 if (this.potentialMovePoints[i] >= 0) {
-
-                    if (this.potentialMovePoints[i] < value) {
-                        value = this.potentialMovePoints[i];
-                        shortestMove = i;
-                    }
                     if (this.potentialMovePoints[i] === value) {
                         if (Math.random() < .5) {
                             shortestMove = i;
                         }
+                    }else
+                    if (this.potentialMovePoints[i] < value) {
+                        value = this.potentialMovePoints[i];
+                        shortestMove = i;
                     }
                 }
             }
         }
         return shortestMove;
+    },
+
+    calculateFurthestMove: function(){
+        var value = 0;
+        var furthestMove = 0;
+        for (var i = 1; i < this.potentialMovePoints.length; i++) {
+            if (this.potentialMovePoints[i] || this.potentialMovePoints[i] === 0) {
+                if (this.potentialMovePoints[i] >= 0) {
+                    if (this.potentialMovePoints[i] === value){
+                        if (Math.random() < .5) {
+                            shortestMove = i;
+                        }
+                    } else
+                    if (this.potentialMovePoints[i] > value) {
+                        value = this.potentialMovePoints[i];
+                        furthestMove = i;
+                    }
+                }
+            }
+        }
+        return furthestMove;
     },
 
     calculateNextMove: function () {
@@ -126,16 +147,7 @@ Enemy.prototype = {
 
             if (this.ai === AI.FRIGHTENED) {
                 // If the tile from above is not null (if its not a floor/path tile it will be undefined) assign it the tile's pathfinding score
-                var value = 0;
-                for (var i = 1; i < this.potentialMovePoints.length; i++) {
-                    if (this.potentialMovePoints[i] >= 0) {
-
-                        if (this.potentialMovePoints[i] > value) {
-                            value = this.potentialMovePoints[i];
-                            bestMove = i;
-                        }
-                    }
-                }
+                bestMove = this.calculateFurthestMove();
             }
             else if (this.ai === AI.CHASE) {
                 // If the tile from above is not null (if its not a floor/path tile it will be undefined) assign it the tile's pathfinding score
@@ -146,11 +158,13 @@ Enemy.prototype = {
 
         // If the best move is different than the current direction and not equal to 0 (0 occurs when the enemy is not near a scored tile - fixed by adding default 20s)
         if (this.current !== bestMove) {
-            this.checkDirection(bestMove);
+            if( bestMove !== 0) {
+                this.checkDirection(bestMove);
+            }
         }
         // If there is no better move than set turning to NONE
         else {
-            //this.move(Phaser.UP)
+                this.turning = Phaser.NONE;
         }
 
     },
@@ -193,6 +207,8 @@ Enemy.prototype = {
         this.sprite = this.gameRef.add.sprite(this.startX, this.startY, 'enemy');
         this.sprite.anchor.set(0.5);
         this.sprite.scale.setTo(2, 2);
+
+        this.enemyType = enemyType;
 
         // Create all the animations
         if (enemyType === EnemyType.RED) {
@@ -304,14 +320,19 @@ Enemy.prototype = {
 
     },
 
+    resetMovementVars: function(){
+        this.ai = AI.SCATTER;
+        this.chaseTimer.add(this.timeToScatter, this.switchToChase, this);
+        this.chaseTimer.start();
+        this.turning = Phaser.NONE;
+        this.current = Phaser.NONE;
+    },
+
     switchToChase: function () {
         this.ai = AI.CHASE;
     },
 
     switchToScatter: function (milliseconds) {
-        this.ai = AI.SCATTER;
-        this.chaseTimer.add(this.timeToScatter, this.switchToChase, this);
-        this.chaseTimer.start();
     },
 
     turn: function () {
@@ -343,7 +364,7 @@ Enemy.prototype = {
 
     update: function () {
 
-        if (this.id === 0) console.log(this);
+        //if (this.id === 0) console.log(this);
 
         // Perform collisions between enemy and level
         this.gameRef.physics.arcade.collide(this.sprite, this.gameRef.layer);
@@ -384,13 +405,6 @@ Enemy.prototype = {
             if (this.current == 4) this.sprite.animations.play('down', 4, true);
         }
 
-        if (this.ai == AI.EATEN) {
-            if (this.current == 1) this.sprite.animations.play('eatenLeft', 4, true);
-            if (this.current == 2) this.sprite.animations.play('eatenRight', 4, true);
-            if (this.current == 3) this.sprite.animations.play('eatenUp', 4, true);
-            if (this.current == 4) this.sprite.animations.play('eatenDown', 4, true);
-        }
-
         // set values based on AI
         if (this.ai == AI.CHASE) {
             this.speed = this.originalSpeed;
@@ -398,11 +412,25 @@ Enemy.prototype = {
         }
         if (this.ai == AI.EATEN) {
             this.speed = this.eatenSpeed;
-            this.threshold = 3;
+            this.threshold = 10;
+
+            if (this.current == 1) this.sprite.animations.play('eatenLeft', 4, true);
+            if (this.current == 2) this.sprite.animations.play('eatenRight', 4, true);
+            if (this.current == 3) this.sprite.animations.play('eatenUp', 4, true);
+            if (this.current == 4) this.sprite.animations.play('eatenDown', 4, true);
+
+            if(this.homeMap[this.marker.y * this.gameRef.map.width + this.marker.x] == 1 && !this.powerupMode){
+                this.ai = AI.CHASE;
+                this.move(Phaser.UP);
+            }
         }
         if (this.ai == AI.FRIGHTENED) {
-            this.speed = this.freightenedSpeed;
+            this.speed = this.powerupSpeed;
             this.threshold = 3;
+
+            if(!this.gameRef.powerupMode && this.ai != AI.EATEN){
+                this.ai == AI.CHASE;
+            }
         }
         if (this.ai == AI.SCATTER) {
             this.speed = this.originalSpeed;
