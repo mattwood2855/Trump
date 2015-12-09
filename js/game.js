@@ -307,10 +307,10 @@ Game.prototype = {
 
     render: function () {
 
-        /*for (var x = 0; x < this.pathPoints.length; x++) {
+        for (var x = 0; x < this.pathPoints.length; x++) {
             if (this.pathPoints[x] >= 0)
                 game.debug.text(this.pathPoints[x], x % this.map.width * this.gridsize + this.gridsize / 2, Math.floor(x / this.map.width) * this.gridsize + this.gridsize / 2);
-        }*/
+        }
 
         /*for (var x = 0; x < this.enemies[0].scatterMap.length; x++) {
             if (this.enemies[0].scatterMap[x] >= 0)
@@ -383,23 +383,23 @@ Game.prototype = {
                 loadTween.onComplete.add(this.loadNextLevel, this);
             }
 
-            this.hud.update();
-
-            if (this.powerupMode) {
-                //this.applySpecialEffects();
-            }
-
-            this.player.update();
-
             // Calculate the pathmap every other update to save cpu
             this.everyOther = !this.everyOther;
             if(this.everyOther) {
                 this.pathPoints = this.buildPathfindingMap(this.player.marker, 0, 15);
             }
 
+
+            this.hud.update();
+
+            this.player.update();
+
+            // Update the enemies
             for (var x = 0; x < this.enemies.length; x++) {
                 this.enemies[x].update();
             }
+
+
 
             // Go through each steak
             for (var x = 0; x < this.steaks.length; x++) {

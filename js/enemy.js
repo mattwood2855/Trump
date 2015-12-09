@@ -4,7 +4,8 @@
 AI = {
     CHASE: 0,
     SCATTER: 1,
-    FRIGHTENED: 2
+    FRIGHTENED: 2,
+    EATEN: 3
 };
 
 EnemyType = {
@@ -24,17 +25,22 @@ function Enemy() {
     this.directions = [null, null, null, null, null];
     this.gameRef = {};
     this.id = 0;
+    this.homeMap = [];
     this.killedPlayer = false;
     this.marker = new Phaser.Point();
     this.opposites = [Phaser.NONE, Phaser.RIGHT, Phaser.LEFT, Phaser.DOWN, Phaser.UP];
     this.powerupMode = false;
     this.scatterMap = [];
-    this.speed = 175;
+    this.speed = 200;
+    this.originalSpeed = 200;
+    this.powerupSpeed = 100;
+    this.potentialMovePoints = [];
+    this.eatenSpeed = 400;
     this.sprite = {};
     this.startX = 0;
     this.startY = 0;
     this.targetTile = new Phaser.Point();
-    this.threshold = 3;
+    this.threshold = 5;
     this.turning = Phaser.NONE;
     this.turnPoint = new Phaser.Point();
 
@@ -42,104 +48,109 @@ function Enemy() {
 
 Enemy.prototype = {
 
-    activatePowerupMode: function(){
+    activatePowerupMode: function () {
+
+        // Set powerup mode to true
         this.powerupMode = true;
+        // Set the animation to the powerup animation
         this.sprite.animations.play('powerup', 4, true);
-        this.ai = AI.FRIGHTENED;
-        this.speed *= .5;
+        // If the enemy is not currently returning to home (eaten)
+        if (this.ai != AI.EATEN) {
+            // Switch to freightened mode
+            this.ai = AI.FRIGHTENED;
+        }
+        this.move(this.current);
     },
 
-    calculateNextMove: function(){
+    calculateShortestMove: function () {
+        var value = 100;
+        var shortestMove;
+        for (var i = 1; i < this.potentialMovePoints.length; i++) {
+            if (this.potentialMovePoints[i]) {
 
-        // Set the marker to the tile that the enemy falls within
-        this.marker.x = this.gameRef.math.snapToFloor(Math.floor(this.sprite.x), this.gameRef.gridsize) / this.gameRef.gridsize;
-        this.marker.y = this.gameRef.math.snapToFloor(Math.floor(this.sprite.y), this.gameRef.gridsize) / this.gameRef.gridsize;
+                if (this.potentialMovePoints[i] >= 0) {
 
-        // Get the 4 potential tiles around the enemy
-        this.directions[1] = this.gameRef.map.getTileLeft(this.gameRef.layer.index, this.marker.x, this.marker.y);
-        this.directions[2] = this.gameRef.map.getTileRight(this.gameRef.layer.index, this.marker.x, this.marker.y);
-        this.directions[3] = this.gameRef.map.getTileAbove(this.gameRef.layer.index, this.marker.x, this.marker.y);
-        this.directions[4] = this.gameRef.map.getTileBelow(this.gameRef.layer.index, this.marker.x, this.marker.y);
+                    if (this.potentialMovePoints[i] < value) {
+                        value = this.potentialMovePoints[i];
+                        shortestMove = i;
+                    }
+                    if (this.potentialMovePoints[i] === value) {
+                        if (Math.random() < .5) {
+                            shortestMove = i;
+                        }
+                    }
+                }
+            }
+        }
+        return shortestMove;
+    },
 
-        // Create an array of valid directions to move
-        // If the tile from above is not null (if its not a floor/path tile it will be undefined) assign it the tile's pathfinding score
-        var potentialMovePoints = [];
-        if (this.directions[1]) potentialMovePoints[Phaser.LEFT] = this.gameRef.pathPoints[this.directions[1].y * this.gameRef.map.width + this.directions[1].x];
-        if (this.directions[2]) potentialMovePoints[Phaser.RIGHT] = this.gameRef.pathPoints[this.directions[2].y * this.gameRef.map.width + this.directions[2].x];
-        if (this.directions[3]) potentialMovePoints[Phaser.UP] = this.gameRef.pathPoints[this.directions[3].y * this.gameRef.map.width + this.directions[3].x];
-        if (this.directions[4]) potentialMovePoints[Phaser.DOWN] = this.gameRef.pathPoints[this.directions[4].y * this.gameRef.map.width + this.directions[4].x];
+    calculateNextMove: function () {
 
+        // Default best move to no movement
         var bestMove = 0;
-        if(this.ai == AI.SCATTER){
+        this.potentialMovePoints = [];
 
-            if (this.directions[1]) potentialMovePoints[Phaser.LEFT] = this.scatterMap[this.directions[1].y * this.gameRef.map.width + this.directions[1].x];
-            if (this.directions[2]) potentialMovePoints[Phaser.RIGHT] = this.scatterMap[this.directions[2].y * this.gameRef.map.width + this.directions[2].x];
-            if (this.directions[3]) potentialMovePoints[Phaser.UP] = this.scatterMap[this.directions[3].y * this.gameRef.map.width + this.directions[3].x];
-            if (this.directions[4]) potentialMovePoints[Phaser.DOWN] = this.scatterMap[this.directions[4].y * this.gameRef.map.width + this.directions[4].x];
+        if (this.ai === AI.SCATTER) {
+            // Determine the potential moves based on the scatter map
+            if (this.directions[1]) this.potentialMovePoints[Phaser.LEFT] = this.scatterMap[this.directions[1].y * this.gameRef.map.width + this.directions[1].x];
+            if (this.directions[2]) this.potentialMovePoints[Phaser.RIGHT] = this.scatterMap[this.directions[2].y * this.gameRef.map.width + this.directions[2].x];
+            if (this.directions[3]) this.potentialMovePoints[Phaser.UP] = this.scatterMap[this.directions[3].y * this.gameRef.map.width + this.directions[3].x];
+            if (this.directions[4]) this.potentialMovePoints[Phaser.DOWN] = this.scatterMap[this.directions[4].y * this.gameRef.map.width + this.directions[4].x];
 
-            if(this.current > 0) {
-                potentialMovePoints[this.opposites[this.current]] = 'undefined';
+            if (this.current > 0) {
+                this.potentialMovePoints[this.opposites[this.current]] = null;
             }
 
-            var value = 100;
-            for (var i = 1; i < potentialMovePoints.length; i++) {
-                if (potentialMovePoints[i] >= 0) {
-
-                    if (potentialMovePoints[i] < value) {
-                        value = potentialMovePoints[i];
-                        bestMove = i;
-                    }
-                    if(potentialMovePoints[i] == value){
-                        if(Math.random() < .5){
-                            bestMove = i;
-                        }
-                    }
-                }
-            }
+            bestMove = this.calculateShortestMove();
         }
-        else {
-            if (this.ai == AI.FRIGHTENED) {
+        if (this.ai === AI.EATEN) {
+            // Determine the potential moves based on the home map
+            if (this.directions[1]) this.potentialMovePoints[Phaser.LEFT] = this.homeMap[this.directions[1].y * this.gameRef.map.width + this.directions[1].x];
+            if (this.directions[2]) this.potentialMovePoints[Phaser.RIGHT] = this.homeMap[this.directions[2].y * this.gameRef.map.width + this.directions[2].x];
+            if (this.directions[3]) this.potentialMovePoints[Phaser.UP] = this.homeMap[this.directions[3].y * this.gameRef.map.width + this.directions[3].x];
+            if (this.directions[4]) this.potentialMovePoints[Phaser.DOWN] = this.homeMap[this.directions[4].y * this.gameRef.map.width + this.directions[4].x];
+
+            bestMove = this.calculateShortestMove();
+        }
+        if (this.ai === AI.FRIGHTENED || this.ai === AI.CHASE) {
+
+            if (this.directions[1]) this.potentialMovePoints[Phaser.LEFT] = this.gameRef.pathPoints[this.directions[1].y * this.gameRef.map.width + this.directions[1].x];
+            if (this.directions[2]) this.potentialMovePoints[Phaser.RIGHT] = this.gameRef.pathPoints[this.directions[2].y * this.gameRef.map.width + this.directions[2].x];
+            if (this.directions[3]) this.potentialMovePoints[Phaser.UP] = this.gameRef.pathPoints[this.directions[3].y * this.gameRef.map.width + this.directions[3].x];
+            if (this.directions[4]) this.potentialMovePoints[Phaser.DOWN] = this.gameRef.pathPoints[this.directions[4].y * this.gameRef.map.width + this.directions[4].x];
+
+            if (this.current > 0) {
+                this.potentialMovePoints[this.opposites[this.current]] = null;
+            }
+
+            if (this.ai === AI.FRIGHTENED) {
+                // If the tile from above is not null (if its not a floor/path tile it will be undefined) assign it the tile's pathfinding score
                 var value = 0;
-                for (var i = 1; i < potentialMovePoints.length; i++) {
-                    if (potentialMovePoints[i] >= 0) {
+                for (var i = 1; i < this.potentialMovePoints.length; i++) {
+                    if (this.potentialMovePoints[i] >= 0) {
 
-                        if (potentialMovePoints[i] > value) {
-                            value = potentialMovePoints[i];
+                        if (this.potentialMovePoints[i] > value) {
+                            value = this.potentialMovePoints[i];
                             bestMove = i;
                         }
                     }
                 }
             }
-            // Get the lowest pathfinding score of all the enemies potential moves. The lowest number is the shortest path to the player
-            else if (this.ai == AI.CHASE) {
-
-                var value = 100;
-                for (var i = 1; i < potentialMovePoints.length; i++) {
-                    if (potentialMovePoints[i] >= 0) {
-
-                        if (potentialMovePoints[i] < value) {
-                            value = potentialMovePoints[i];
-                            bestMove = i;
-                        }
-                    }
-                }
+            else if (this.ai === AI.CHASE) {
+                // If the tile from above is not null (if its not a floor/path tile it will be undefined) assign it the tile's pathfinding score
+                bestMove = this.calculateShortestMove();
             }
         }
 
-        // If the best move is different than the current direction and not equal to 0 (0 occurs when the enemy is not near a scored tile)
+
+        // If the best move is different than the current direction and not equal to 0 (0 occurs when the enemy is not near a scored tile - fixed by adding default 20s)
         if (this.current !== bestMove) {
-            if( bestMove !== 0) {
-                this.checkDirection(bestMove);
-            }
-            else{
-                if(this.sprite.x > this.gameRef.player.sprite.x ){
-                    this.checkDirection(1);
-                }
-            }
+            this.checkDirection(bestMove);
         }
         // If there is no better move than set turning to NONE
         else {
-            this.turning = Phaser.NONE;
+            //this.move(Phaser.UP)
         }
 
     },
@@ -184,57 +195,65 @@ Enemy.prototype = {
         this.sprite.scale.setTo(2, 2);
 
         // Create all the animations
-        if (enemyType == EnemyType.RED) {
+        if (enemyType === EnemyType.RED) {
             this.sprite.animations.add('right', [22, 23]);
             this.sprite.animations.add('left', [20, 21]);
             this.sprite.animations.add('up', [16, 17]);
             this.sprite.animations.add('down', [18, 19]);
         }
-        else if (enemyType == EnemyType.PINK) {
+        else if (enemyType === EnemyType.PINK) {
             this.sprite.animations.add('right', [30, 31]);
             this.sprite.animations.add('left', [28, 29]);
             this.sprite.animations.add('up', [24, 25]);
             this.sprite.animations.add('down', [26, 27]);
         }
-        else if (enemyType == EnemyType.BLUE) {
+        else if (enemyType === EnemyType.BLUE) {
             this.sprite.animations.add('right', [38, 39]);
             this.sprite.animations.add('left', [36, 37]);
             this.sprite.animations.add('up', [32, 33]);
             this.sprite.animations.add('down', [34, 35]);
         }
-        else if (enemyType == EnemyType.YELLOW) {
+        else if (enemyType === EnemyType.YELLOW) {
             this.sprite.animations.add('right', [46, 47]);
             this.sprite.animations.add('left', [44, 45]);
             this.sprite.animations.add('up', [40, 41]);
             this.sprite.animations.add('down', [42, 43]);
         }
+
         this.sprite.animations.add('powerup', [12, 13]);
         this.sprite.animations.add('powerupEnding', [12, 13, 14, 15]);
+
+        this.sprite.animations.add('eatenLeft', [62]);
+        this.sprite.animations.add('eatenRight', [63]);
+        this.sprite.animations.add('eatenUp', [60]);
+        this.sprite.animations.add('eatenDown', [61]);
 
         this.sprite.animations.play('up', 4, true);
 
         // Enable physics for the enemy
         this.gameRef.physics.arcade.enable(this.sprite);
 
+        this.id = id;
         // Build a scatter map for this enemy
-        if (id == 0) {
-            this.targetTile.x = this.gameRef.map.properties.Enemy1X;
-            this.targetTile.y = this.gameRef.map.properties.Enemy1Y;
+        if (id === 0) {
+            this.targetTile.x = parseInt(this.gameRef.map.properties.Enemy1X);
+            this.targetTile.y = parseInt(this.gameRef.map.properties.Enemy1Y);
         }
-        if (id == 1) {
-            this.targetTile.x = this.gameRef.map.properties.Enemy2X;
-            this.targetTile.y = this.gameRef.map.properties.Enemy2Y;
+        if (id === 1) {
+            this.targetTile.x = parseInt(this.gameRef.map.properties.Enemy2X);
+            this.targetTile.y = parseInt(this.gameRef.map.properties.Enemy2Y);
         }
-        if (id == 2) {
-            this.targetTile.x = this.gameRef.map.properties.Enemy3X;
-            this.targetTile.y = this.gameRef.map.properties.Enemy3Y;
+        if (id === 2) {
+            this.targetTile.x = parseInt(this.gameRef.map.properties.Enemy3X);
+            this.targetTile.y = parseInt(this.gameRef.map.properties.Enemy3Y);
         }
-        if (id == 3) {
-            this.targetTile.x = this.gameRef.map.properties.Enemy4X;
-            this.targetTile.y = this.gameRef.map.properties.Enemy4Y;
+        if (id === 3) {
+            this.targetTile.x = parseInt(this.gameRef.map.properties.Enemy4X);
+            this.targetTile.y = parseInt(this.gameRef.map.properties.Enemy4Y);
         }
 
         this.scatterMap = this.gameRef.buildPathfindingMap(this.targetTile, 0, 15);
+        this.homeMap = this.gameRef.buildPathfindingMap(new Phaser.Point(map.properties.EnemyStartX, map.properties.EnemyStartY), 0, 15);
 
         this.chaseTimer = game.time.create(false);
         this.chaseTimer.add(this.timeToScatter, this.switchToChase, this);
@@ -242,10 +261,13 @@ Enemy.prototype = {
 
     },
 
-    deActivatePowerupMode: function(){
+    deActivatePowerupMode: function () {
         this.powerupMode = false;
-        this.ai = AI.CHASE;
-        this.speed *= 2;
+
+        if (!this.ai === AI.EATEN) {
+            this.ai = AI.CHASE;
+            this.speed = this.originalSpeed;
+        }
     },
 
     move: function (direction) {
@@ -282,11 +304,11 @@ Enemy.prototype = {
 
     },
 
-    switchToChase: function(){
+    switchToChase: function () {
         this.ai = AI.CHASE;
     },
 
-    switchToScatter: function(milliseconds){
+    switchToScatter: function (milliseconds) {
         this.ai = AI.SCATTER;
         this.chaseTimer.add(this.timeToScatter, this.switchToChase, this);
         this.chaseTimer.start();
@@ -321,20 +343,28 @@ Enemy.prototype = {
 
     update: function () {
 
+        if (this.id === 0) console.log(this);
+
         // Perform collisions between enemy and level
         this.gameRef.physics.arcade.collide(this.sprite, this.gameRef.layer);
 
+        // Update the marker (used for pathfinding and determining possible turning) to whatever tile the sprite is on
+        this.updateCurrentTileMarker();
+
+        // Update the surround tiles according to our tile marker
+        this.updateSurroundingTiles();
+
         // Wrap the player if they walk off the edge
-        if(this.sprite.x < -this.gameRef.gridsize){
-            this.sprite.x = game.width + this.gameRef.gridsize/2;
+        if (this.sprite.x < -this.gameRef.gridsize) {
+            this.sprite.x = game.width + this.gameRef.gridsize / 2;
         }
-        if(this.sprite.x > game.width + this.gameRef.gridsize/2){
+        if (this.sprite.x > game.width + this.gameRef.gridsize / 2) {
             this.sprite.x = -this.gameRef.gridsize;
         }
-        if(this.sprite.y < -this.gameRef.gridsize){
-            this.sprite.y = game.height + this.gameRef.gridsize/2;
+        if (this.sprite.y < -this.gameRef.gridsize) {
+            this.sprite.y = game.height + this.gameRef.gridsize / 2;
         }
-        if(this.sprite.y > game.height + this.gameRef.gridsize/2){
+        if (this.sprite.y > game.height + this.gameRef.gridsize / 2) {
             this.sprite.y = -this.gameRef.gridsize;
         }
 
@@ -347,25 +377,61 @@ Enemy.prototype = {
         }
 
         // Update the animations
-        if(!this.powerupMode) {
+        if (!this.powerupMode) {
             if (this.current == 1) this.sprite.animations.play('left', 4, true);
             if (this.current == 2) this.sprite.animations.play('right', 4, true);
             if (this.current == 3) this.sprite.animations.play('up', 4, true);
             if (this.current == 4) this.sprite.animations.play('down', 4, true);
         }
 
+        if (this.ai == AI.EATEN) {
+            if (this.current == 1) this.sprite.animations.play('eatenLeft', 4, true);
+            if (this.current == 2) this.sprite.animations.play('eatenRight', 4, true);
+            if (this.current == 3) this.sprite.animations.play('eatenUp', 4, true);
+            if (this.current == 4) this.sprite.animations.play('eatenDown', 4, true);
+        }
+
+        // set values based on AI
+        if (this.ai == AI.CHASE) {
+            this.speed = this.originalSpeed;
+            this.threshold = 3;
+        }
+        if (this.ai == AI.EATEN) {
+            this.speed = this.eatenSpeed;
+            this.threshold = 3;
+        }
+        if (this.ai == AI.FRIGHTENED) {
+            this.speed = this.freightenedSpeed;
+            this.threshold = 3;
+        }
+        if (this.ai == AI.SCATTER) {
+            this.speed = this.originalSpeed;
+            this.threshold = 3;
+        }
+
     },
 
-    warnPowerupMode: function(){
+    updateCurrentTileMarker: function () {
+        // Set the marker to the tile that the enemy falls within
+        this.marker.x = this.gameRef.math.snapToFloor(Math.floor(this.sprite.x), this.gameRef.gridsize) / this.gameRef.gridsize;
+        this.marker.y = this.marker.y = this.gameRef.math.snapToFloor(Math.floor(this.sprite.y), this.gameRef.gridsize) / this.gameRef.gridsize;
+    },
+
+    updateSurroundingTiles: function () {
+        this.directions = [];
+        // Get the 4 potential tiles around the enemy
+        this.directions[1] = this.gameRef.map.getTileLeft(this.gameRef.layer.index, this.marker.x, this.marker.y);
+        this.directions[2] = this.gameRef.map.getTileRight(this.gameRef.layer.index, this.marker.x, this.marker.y);
+        this.directions[3] = this.gameRef.map.getTileAbove(this.gameRef.layer.index, this.marker.x, this.marker.y);
+        this.directions[4] = this.gameRef.map.getTileBelow(this.gameRef.layer.index, this.marker.x, this.marker.y);
+    },
+
+    warnPowerupMode: function () {
         this.sprite.animations.play('powerupEnding', 4, true)
     },
 
-    wasEaten: function(){
-        console.log("I was eaten")
-        this.targetTile.x = this.gameRef.map.properties.EnemyStartX;
-        this.targetTile.y = this.gameRef.map.properties.EnemyStartY;
-        this.scatterMap = this.gameRef.buildPathfindingMap(this.targetTile, 0, 15);
-        this.ai = AI.SCATTER;
+    wasEaten: function () {
+        this.ai = AI.EATEN;
     }
 
 };
