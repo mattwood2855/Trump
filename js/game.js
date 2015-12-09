@@ -29,7 +29,7 @@ var Game = function (game) {
     this.powerupSounds = [];
     this.powerupSoundPlaying = false;
     this.readyToStart = false;
-    this.safetiles = [];
+    this.pathTiles = [];
     this.selectKey = {};
     this.startingPoints = 0;
     this.steaks = [];
@@ -62,7 +62,7 @@ Game.prototype = {
 
         for(var y = 0; y < this.map.height; y++)
             for (var x = 0; x < this.map.width; x++) {
-                if(this.anyMatches(this.map.getTile(x,y).index,this.safetiles)) {
+                if(this.anyMatches(this.map.getTile(x,y).index,this.pathTiles)) {
                     pathfindingMap[this.map.width*y+x] = 20;
                 }
             }
@@ -97,7 +97,7 @@ Game.prototype = {
         for(var i=0; i < pathTiles.length; i++){
             pathTiles[i] = parseInt(pathTiles[i], 10);
         }
-        this.safetiles = pathTiles;
+        this.pathTiles = pathTiles;
         this.map.setCollisionByExclusion(pathTiles, true, this.layer);
 
         this.player.create(this.map);
@@ -316,7 +316,7 @@ Game.prototype = {
                 var tile1Dindex = tiles[x].y * this.map.width + tiles[x].x;
 
                 // If the tile is a path tile (not a wall)
-                if (this.anyMatches(tiles[x].index, this.safetiles)) {
+                if (this.anyMatches(tiles[x].index, this.pathTiles)) {
 
                     // If this tile has already been assigned a point
                     if (pathfindingMap[tile1Dindex]) {
