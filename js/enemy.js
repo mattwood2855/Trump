@@ -179,7 +179,7 @@ Enemy.prototype = {
 
         // Verify that the tile the enemy is trying to turn to is a path tile, otherwise return
         if (this.directions[turnTo]) {
-            if (!this.gameRef.anyMatches(this.directions[turnTo].index, this.gameRef.safetiles)) {
+            if (!this.gameRef.anyMatches(this.directions[turnTo].index, this.gameRef.pathTiles)) {
                 return;
             }
         }
